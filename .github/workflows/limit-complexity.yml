@@ -1,6 +1,4 @@
-# This is a complexity limit checking workflow
-
-name: CCN check
+name: Limit complexity
 
 on:
   push:
@@ -13,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-        
-      - name: Istall lizard
-        uses: pip install lizard
-        
-      - name: Limit complexity
-        run: $HOME/.local/bin/lizard --CCN 3
+    - uses: actions/checkout@v2
+
+    - name: Install lizard
+      run: pip install lizard
+
+    - name: Limit complexity
+      run: $HOME/.local/bin/lizard --CCN 3

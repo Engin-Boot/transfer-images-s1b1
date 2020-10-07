@@ -1,12 +1,16 @@
 /*
  * Standard OS Includes
  */
-#include<iostream>
-#include<map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+#include <algorithm>
 #include <time.h>
+#include <map>
+
+using namespace std;
+
 #ifdef _WIN32
 #include <fcntl.h>
 #endif
@@ -151,11 +155,13 @@ int main(int argc, char** argv);
 
 static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
 static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname);
+static void list_updation(InstanceNode** A_list, InstanceNode* newNode);
 static SAMP_BOOLEAN UpdateNode(InstanceNode* A_node);
 static void FreeList(InstanceNode** A_list);
 static int GetNumNodes(InstanceNode* A_list);
 static FORMAT_ENUM CheckFileFormat(char* A_filename);
 static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceNode* A_node);
+static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node);
 static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node);
 static MC_STATUS NOEXP_FUNC MediaToFileObj(char* Afilename, void* AuserInfo, int* AdataSize, void** AdataBuffer, int AisFirst, int* AisLast);
 
@@ -516,7 +522,7 @@ int main(int argc, char** argv)
  ********************************************************************/
 static void PrintCmdLine(void)
 {
-    printf("\nUsage stor_scu remote_ae start stop -f filename -a local_ae -b local_port -c -n remote_host -p remote_port -l service_list -v -u username -w password -q\n");
+    printf("\nUsage stor_scu remote_ae start stop -f filename -a local_ae -b local_port -n remote_host -p remote_port -l service_list -v \n");
     printf("\n");
     printf("\t remote_ae       name of remote Application Entity Title to connect with\n");
     printf("\t start           start image number (not required if -f specified)\n");
@@ -524,17 +530,10 @@ static void PrintCmdLine(void)
     printf("\t -f filename     (optional) specify a file containing a list of images to transfer\n");
     printf("\t -a local_ae     (optional) specify the local Application Title (default: MERGE_STORE_SCU)\n");
     printf("\t -b local_port   (optional) specify the local TCP listen port for commitment (default: found in the mergecom.pro file)\n");
-    printf("\t -c              Do storage commitment for the transferred files\n");
     printf("\t -n remote_host  (optional) specify the remote hostname (default: found in the mergecom.app file for remote_ae)\n");
     printf("\t -p remote_port  (optional) specify the remote TCP listen port (default: found in the mergecom.app file for remote_ae)\n");
     printf("\t -l service_list (optional) specify the service list to use when negotiating (default: Storage_SCU_Service_List)\n");
-    printf("\t -s              Transfer the data using stream (raw) mode\n");
     printf("\t -v              Execute in verbose mode, print negotiation information\n");
-    printf("\t -u username     (optional) specify a username to negotiate as defined in DICOM Supplement 99\n");
-    printf("\t                 Note: just a username can be specified, or a username and password can be specified\n");
-    printf("\t                       A password alone cannot be specified.\n");
-    printf("\t -w password     (optional) specify a password to negotiate as defined in DICOM Supplement 99\n");
-    printf("\t -q              Positive response to user identity requested from SCP\n");
     printf("\n");
     printf("\tImage files must be in the current directory if -f is not used.\n");
     printf("\tImage files must be named 0.img, 1.img, 2.img, etc if -f is not used.\n");
@@ -596,14 +595,14 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
      */
     for (i = 1; i < A_argc; i++)
     {
-        if (!strcmp(A_argv[i], "-h") || !strcmp(A_argv[i], "/h") ||
-            !strcmp(A_argv[i], "-H") || !strcmp(A_argv[i], "/H") ||
-            !strcmp(A_argv[i], "-?") || !strcmp(A_argv[i], "/?"))
+        string str(A_argv[i]);
+        transform(str.begin(), str.end(), str.begin(), ::tolower);
+        if ((str == "-h") || !strcmp(A_argv[i], "-?"))
         {
             PrintCmdLine();
             return SAMP_FALSE;
         }
-        else if (!strcmp(A_argv[i], "-a") || !strcmp(A_argv[i], "-A"))
+        else if (str == "-a")
         {
             /*
              * Set the Local AE
@@ -611,7 +610,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             i++;
             strcpy(A_options->LocalAE, A_argv[i]);
         }
-        else if (!strcmp(A_argv[i], "-b") || !strcmp(A_argv[i], "-B"))
+        else if (str == "-b")
         {
             /*
              * Local Port Number
@@ -620,14 +619,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             A_options->ListenPort = atoi(A_argv[i]);
 
         }
-        else if (!strcmp(A_argv[i], "-c") || !strcmp(A_argv[i], "-C"))
-        {
-            /*
-             * StorageCommit mode
-             */
-            A_options->StorageCommit = SAMP_TRUE;
-        }
-        else if (!strcmp(A_argv[i], "-f") || !strcmp(A_argv[i], "-F"))
+        else if (str == "-f")
         {
             /*
              * Config file with filenames
@@ -636,7 +628,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             A_options->UseFileList = SAMP_TRUE;
             strcpy(A_options->FileList, A_argv[i]);
         }
-        else if (!strcmp(A_argv[i], "-l") || !strcmp(A_argv[i], "-L"))
+        else if (str == "-l")
         {
             /*
              * Service List
@@ -644,7 +636,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             i++;
             strcpy(A_options->ServiceList, A_argv[i]);
         }
-        else if (!strcmp(A_argv[i], "-n") || !strcmp(A_argv[i], "-N"))
+        else if (str == "-n")
         {
             /*
              * Remote Host Name
@@ -652,7 +644,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             i++;
             strcpy(A_options->RemoteHostname, A_argv[i]);
         }
-        else if (!strcmp(A_argv[i], "-p") || !strcmp(A_argv[i], "-P"))
+        else if (str == "-p")
         {
             /*
              * Remote Port Number
@@ -661,42 +653,12 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
             A_options->RemotePort = atoi(A_argv[i]);
 
         }
-        else if (!strcmp(A_argv[i], "-q") || !strcmp(A_argv[i], "-Q"))
-        {
-            /*
-             * Positive response requested from server.
-             */
-            A_options->ResponseRequested = SAMP_TRUE;
-        }
-        else if (!strcmp(A_argv[i], "-s") || !strcmp(A_argv[i], "-S"))
-        {
-            /*
-             * Stream mode
-             */
-            A_options->StreamMode = SAMP_TRUE;
-        }
-        else if (!strcmp(A_argv[i], "-u") || !strcmp(A_argv[i], "-U"))
-        {
-            /*
-             * Username
-             */
-            i++;
-            strcpy(A_options->Username, A_argv[i]);
-        }
-        else if (!strcmp(A_argv[i], "-v") || !strcmp(A_argv[i], "-V"))
+        else if (str == "-v")
         {
             /*
              * Verbose mode
              */
             A_options->Verbose = SAMP_TRUE;
-        }
-        else if (!strcmp(A_argv[i], "-w") || !strcmp(A_argv[i], "-W"))
-        {
-            /*
-             * Username
-             */
-            i++;
-            strcpy(A_options->Password, A_argv[i]);
         }
         else
         {
@@ -724,20 +686,19 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
     }
 
     /*
-     * If the hostname & port are specified on the command line,
-     * the user may not have the remote system configured in the
-     * mergecom.app file.  In this case, force the default service
-     * list, so we can attempt to make a connection, or else we would
-     * fail.
-     */
+    * If the hostname & port are specified on the command line,
+    * the user may not have the remote system configured in the
+    * mergecom.app file.  In this case, force the default service
+    * list, so we can attempt to make a connection, or else we would
+    * fail.
+    */
+
     if (A_options->RemoteHostname[0]
         && !A_options->ServiceList[0]
         && (A_options->RemotePort != -1))
     {
         strcpy(A_options->ServiceList, "Storage_SCU_Service_List");
     }
-
-
     if (A_options->StopImage < A_options->StartImage)
     {
         printf("Image stop number must be greater than or equal to image start number.\n");
@@ -768,8 +729,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
 static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
 {
     InstanceNode* newNode;
-    InstanceNode* listNode;
-
+    
     newNode = (InstanceNode*)malloc(sizeof(InstanceNode));
     if (!newNode)
     {
@@ -787,7 +747,13 @@ static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
     newNode->imageSent = SAMP_FALSE;
     newNode->msgID = -1;
     newNode->transferSyntax = IMPLICIT_LITTLE_ENDIAN;
-
+    list_updation(A_list,newNode);
+    
+    return (SAMP_TRUE);
+}
+static void list_updation(InstanceNode** A_list, InstanceNode* newNode)
+{
+    InstanceNode* listNode;
     if (!*A_list)
     {
         /*
@@ -808,10 +774,7 @@ static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
 
         listNode->Next = newNode;
     }
-
-    return (SAMP_TRUE);
 }
-
 
 /****************************************************************************
  *
@@ -932,41 +895,42 @@ static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceN
 {
     FORMAT_ENUM             format = UNKNOWN_FORMAT;
     SAMP_BOOLEAN            sampBool = SAMP_FALSE;
-    MC_STATUS               mcStatus;
-
+    
 
     format = CheckFileFormat(A_node->fname);
-    switch (format)
+    if (format == MEDIA_FORMAT)
     {
-    case MEDIA_FORMAT:
         A_node->mediaFormat = SAMP_TRUE;
         sampBool = ReadFileFromMedia(A_options, A_appID, A_node->fname, &A_node->msgID, &A_node->transferSyntax, &A_node->imageBytes);
-        break;
-
-    case UNKNOWN_FORMAT:
+    }
+    else
+    {
         PrintError("Unable to determine the format of file", MC_NORMAL_COMPLETION);
         sampBool = SAMP_FALSE;
-        break;
     }
-
     if (sampBool == SAMP_TRUE)
     {
-        mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_CLASS_UID, sizeof(A_node->SOPClassUID), A_node->SOPClassUID);
-        if (mcStatus != MC_NORMAL_COMPLETION)
-        {
-            PrintError("MC_Get_Value_To_String for SOP Class UID failed", mcStatus);
-        }
-
-        mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_INSTANCE_UID, sizeof(A_node->SOPInstanceUID), A_node->SOPInstanceUID);
-        if (mcStatus != MC_NORMAL_COMPLETION)
-        {
-            PrintError("MC_Get_Value_To_String for SOP Instance UID failed", mcStatus);
-        }
+        sampBool = ValidImageCheck(sampBool, A_node);
     }
     fflush(stdout);
     return sampBool;
 }
+static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool,InstanceNode* A_node)
+{
+    MC_STATUS               mcStatus;
+    mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_CLASS_UID, sizeof(A_node->SOPClassUID), A_node->SOPClassUID);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+      {
+            PrintError("MC_Get_Value_To_String for SOP Class UID failed", mcStatus);
+      }
 
+    mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_INSTANCE_UID, sizeof(A_node->SOPInstanceUID), A_node->SOPInstanceUID);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+      {
+            PrintError("MC_Get_Value_To_String for SOP Instance UID failed", mcStatus);
+      }
+    return sampBool;
+}
 /****************************************************************************
  *
  *  Function    :   SendImage
@@ -1141,7 +1105,7 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
 bool CheckTransferSyntax(int A_syntax)
 {
     //Associated with ReadFileFromMedia
-    std::map<int, int> MapTransferSyntaxToValue;
+    map<int, int> MapTransferSyntaxToValue;
 
     MapTransferSyntaxToValue[DEFLATED_EXPLICIT_LITTLE_ENDIAN] = 1;
     MapTransferSyntaxToValue[EXPLICIT_BIG_ENDIAN] = 1;

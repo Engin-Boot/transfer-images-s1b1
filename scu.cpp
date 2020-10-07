@@ -1,6 +1,8 @@
- /*
-  * Standard OS Includes
-  */
+/*
+ * Standard OS Includes
+ */
+#include<iostream>
+#include<map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,11 +11,11 @@
 #include <fcntl.h>
 #endif
 
-  /*
-   * Merge DICOM Toolkit Includes
-   */
+ /*
+  * Merge DICOM Toolkit Includes
+  */
 #include "mc3media.h"
-//#include "mc3msg.h"
+  //#include "mc3msg.h"
 #include "mergecom.h"
 #include "diction.h"
 //#include "mc3services.h"
@@ -336,7 +338,7 @@ int main(int argc, char** argv)
          * Print out User Identity information if negotiated
          */
         printf("  User Identity type:       None\n\n\n");
-       
+
         printf("Services and transfer syntaxes negotiated:\n");
 
         /*
@@ -476,9 +478,9 @@ int main(int argc, char** argv)
     //printf("   Transfer Rate: %.1fKB/s\n", ((float)totalBytesRead / seconds) / 1024.0);
     fflush(stdout);
 
-     /*
-      * Release the dICOM Application
-      */
+    /*
+     * Release the dICOM Application
+     */
     mcStatus = MC_Release_Application(&applicationID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -984,6 +986,50 @@ static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceN
  *                  error occurs.
  *
  ****************************************************************************/
+
+ /*
+ SAMP_BOOLEAN CheckMCStatus(MC_STATUS mcStatus, const char* ErrorMessage)
+ {
+     if (mcStatus != MC_NORMAL_COMPLETION)
+     {
+         PrintError(ErrorMessage, mcStatus);
+         fflush(stdout);
+         return SAMP_TRUE;
+     }
+ }
+
+ bool SetService(InstanceNode*& A_node)
+ {
+     MC_STATUS mcStatus;
+
+     mcStatus = MC_Set_Service_Command(A_node->msgID, A_node->serviceName, C_STORE_RQ);
+     if (CheckMCStatus(mcStatus, "MC_Set_Service_Command failed") == SAMP_TRUE)
+     {
+         return false;
+     }
+     mcStatus = MC_Set_Value_From_String(A_node->msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, A_node->SOPInstanceUID);
+     if (CheckMCStatus(mcStatus, "MC_Set_Value_From_String failed for affected SOP Instance UID") == SAMP_TRUE)
+     {
+         return false;
+     }
+     return true;
+
+ }
+ bool GetSOPUIDAndSetService(InstanceNode*& A_node)
+ {    //Gives Error MC_Release_Application failed: Application ID parameter is invalid
+     MC_STATUS mcStatus;
+     mcStatus = MC_Get_MergeCOM_Service(A_node->SOPClassUID, A_node->serviceName, sizeof(A_node->serviceName));
+     if (CheckMCStatus(mcStatus, "MC_Get_MergeCOM_Service failed") == SAMP_TRUE)
+     {
+         return false;
+     }
+
+     if(!SetService(A_node))
+         return false;
+
+     return true;
+ }*/
+
 static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node)
 {
     MC_STATUS       mcStatus;
@@ -991,6 +1037,7 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
     A_node->imageSent = SAMP_FALSE;
 
     /* Get the SOP class UID and set the service */
+
     mcStatus = MC_Get_MergeCOM_Service(A_node->SOPClassUID, A_node->serviceName, sizeof(A_node->serviceName));
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -998,6 +1045,7 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
         fflush(stdout);
         return (SAMP_TRUE);
     }
+
 
     mcStatus = MC_Set_Service_Command(A_node->msgID, A_node->serviceName, C_STORE_RQ);
     if (mcStatus != MC_NORMAL_COMPLETION)
@@ -1007,7 +1055,9 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
         return (SAMP_TRUE);
     }
 
+
     /* set affected SOP Instance UID */
+
     mcStatus = MC_Set_Value_From_String(A_node->msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, A_node->SOPInstanceUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -1015,7 +1065,12 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
         fflush(stdout);
         return (SAMP_TRUE);
     }
-
+    /*
+    if (!GetSOPUIDAndSetService(A_node))
+    {
+        return SAMP_TRUE;
+    }
+    */
     /*
      *  Send the message
      */
@@ -1082,6 +1137,98 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
  *                  for use in the network routines.
  *
  ****************************************************************************/
+
+bool CheckTransferSyntax(int A_syntax)
+{
+    //Associated with ReadFileFromMedia
+    std::map<int, int> MapTransferSyntaxToValue;
+
+    MapTransferSyntaxToValue[DEFLATED_EXPLICIT_LITTLE_ENDIAN] = 1;
+    MapTransferSyntaxToValue[EXPLICIT_BIG_ENDIAN] = 1;
+    MapTransferSyntaxToValue[EXPLICIT_LITTLE_ENDIAN] = 1;
+    MapTransferSyntaxToValue[HEVC_H265_M10P_LEVEL_5_1] = 1;
+    MapTransferSyntaxToValue[HEVC_H265_MP_LEVEL_5_1] = 1;
+    MapTransferSyntaxToValue[IMPLICIT_BIG_ENDIAN] = 1;
+    MapTransferSyntaxToValue[IMPLICIT_LITTLE_ENDIAN] = 1;
+    MapTransferSyntaxToValue[JPEG_2000] = 1;
+    MapTransferSyntaxToValue[JPEG_2000_LOSSLESS_ONLY] = 1;
+    MapTransferSyntaxToValue[JPEG_2000_MC] = 1;
+    MapTransferSyntaxToValue[JPEG_2000_MC_LOSSLESS_ONLY] = 1;
+    MapTransferSyntaxToValue[JPEG_BASELINE] = 1;
+    MapTransferSyntaxToValue[JPEG_EXTENDED_2_4] = 1;
+    MapTransferSyntaxToValue[JPEG_EXTENDED_3_5] = 1;
+    MapTransferSyntaxToValue[JPEG_SPEC_NON_HIER_6_8] = 1;
+    MapTransferSyntaxToValue[JPEG_SPEC_NON_HIER_7_9] = 1;
+    MapTransferSyntaxToValue[JPEG_FULL_PROG_NON_HIER_10_12] = 1;
+    MapTransferSyntaxToValue[JPEG_FULL_PROG_NON_HIER_11_13] = 1;
+    MapTransferSyntaxToValue[JPEG_LOSSLESS_NON_HIER_14] = 1;
+    MapTransferSyntaxToValue[JPEG_LOSSLESS_NON_HIER_15] = 1;
+    MapTransferSyntaxToValue[JPEG_EXTENDED_HIER_16_18] = 1;
+    MapTransferSyntaxToValue[JPEG_EXTENDED_HIER_17_19] = 1;
+    MapTransferSyntaxToValue[JPEG_SPEC_HIER_20_22] = 1;
+    MapTransferSyntaxToValue[JPEG_SPEC_HIER_21_23] = 1;
+    MapTransferSyntaxToValue[JPEG_FULL_PROG_HIER_24_26] = 1;
+    MapTransferSyntaxToValue[JPEG_FULL_PROG_HIER_25_27] = 1;
+    MapTransferSyntaxToValue[JPEG_LOSSLESS_HIER_28] = 1;
+    MapTransferSyntaxToValue[JPEG_LOSSLESS_HIER_29] = 1;
+    MapTransferSyntaxToValue[JPEG_LOSSLESS_HIER_14] = 1;
+    MapTransferSyntaxToValue[JPEG_LS_LOSSLESS] = 1;
+    MapTransferSyntaxToValue[JPEG_LS_LOSSY] = 1;
+    MapTransferSyntaxToValue[JPIP_REFERENCED] = 1;
+    MapTransferSyntaxToValue[JPIP_REFERENCED_DEFLATE] = 1;
+    MapTransferSyntaxToValue[MPEG2_MPHL] = 1;
+    MapTransferSyntaxToValue[MPEG2_MPML] = 1;
+    MapTransferSyntaxToValue[MPEG4_AVC_H264_HP_LEVEL_4_1] = 1;
+    MapTransferSyntaxToValue[MPEG4_AVC_H264_BDC_HP_LEVEL_4_1] = 1;
+    MapTransferSyntaxToValue[MPEG4_AVC_H264_HP_LEVEL_4_2_2D] = 1;
+    MapTransferSyntaxToValue[MPEG4_AVC_H264_HP_LEVEL_4_2_3D] = 1;
+    MapTransferSyntaxToValue[MPEG4_AVC_H264_STEREO_HP_LEVEL_4_2] = 1;
+    MapTransferSyntaxToValue[SMPTE_ST_2110_20_UNCOMPRESSED_PROGRESSIVE_ACTIVE_VIDEO] = 1;
+    MapTransferSyntaxToValue[SMPTE_ST_2110_20_UNCOMPRESSED_INTERLACED_ACTIVE_VIDEO] = 1;
+    MapTransferSyntaxToValue[SMPTE_ST_2110_30_PCM_DIGITAL_AUDIO] = 1;
+    MapTransferSyntaxToValue[PRIVATE_SYNTAX_1] = 1;
+    MapTransferSyntaxToValue[PRIVATE_SYNTAX_2] = 1;
+    MapTransferSyntaxToValue[RLE] = 1;
+    MapTransferSyntaxToValue[INVALID_TRANSFER_SYNTAX] = 0;
+
+    return MapTransferSyntaxToValue[A_syntax];
+
+}
+
+void CloseCallBackInfo(CBinfo& callbackInfo)
+{
+    ////Associated with ReadFileFromMedia
+    if (callbackInfo.fp)
+        fclose(callbackInfo.fp);
+
+    if (callbackInfo.buffer)
+        free(callbackInfo.buffer);
+
+    return;
+}
+
+MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filename, CBinfo& callbackInfo)
+{
+    //Associated with ReadFileFromMedia
+    MC_STATUS mcStatusTemp;
+    mcStatusTemp = MC_Create_Empty_File(A_msgID, A_filename);
+
+    if (mcStatusTemp != MC_NORMAL_COMPLETION)
+    {
+        PrintError("Unable to create file object", mcStatusTemp);
+        fflush(stdout);
+        return(mcStatusTemp);
+    }
+    mcStatusTemp = MC_Open_File(A_appID, *A_msgID, &callbackInfo, MediaToFileObj);
+    if (mcStatusTemp != MC_NORMAL_COMPLETION)
+    {
+        CloseCallBackInfo(callbackInfo);
+        PrintError("MC_Open_File failed, unable to read file from media", mcStatusTemp);
+        MC_Free_File(A_msgID);
+        fflush(stdout);
+        return(mcStatusTemp);
+    }
+}
 static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int               A_appID,
     char* A_filename,
@@ -1101,37 +1248,18 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     /*
      * Create new File object
      */
-    mcStatus = MC_Create_Empty_File(A_msgID, A_filename);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("Unable to create file object", mcStatus);
-        fflush(stdout);
-        return(SAMP_FALSE);
-    }
 
-    /*
-     * Read the file off of disk
+
+     /*
+      * Read the file off of disk
      */
-    mcStatus = MC_Open_File(A_appID, *A_msgID, &callbackInfo, MediaToFileObj);
+    mcStatus = CreateEmptyFileAndStoreIt(A_appID, A_msgID, A_filename, callbackInfo);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
-        if (callbackInfo.fp)
-            fclose(callbackInfo.fp);
-
-        if (callbackInfo.buffer)
-            free(callbackInfo.buffer);
-
-        PrintError("MC_Open_File failed, unable to read file from media", mcStatus);
-        MC_Free_File(A_msgID);
-        fflush(stdout);
         return(SAMP_FALSE);
     }
 
-    if (callbackInfo.fp)
-        fclose(callbackInfo.fp);
-
-    if (callbackInfo.buffer)
-        free(callbackInfo.buffer);
+    CloseCallBackInfo(callbackInfo);
 
     *A_bytesRead = callbackInfo.bytesRead;
 
@@ -1172,63 +1300,13 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
      * image transfer syntax to be sure it is not encoded as an encapsulated
      * transfer syntax.
      */
-    switch (*A_syntax)
+
+    if (!CheckTransferSyntax(*A_syntax))
     {
-    case DEFLATED_EXPLICIT_LITTLE_ENDIAN:
-    case EXPLICIT_BIG_ENDIAN:
-    case EXPLICIT_LITTLE_ENDIAN:
-    case HEVC_H265_M10P_LEVEL_5_1:
-    case HEVC_H265_MP_LEVEL_5_1:
-    case IMPLICIT_BIG_ENDIAN:
-    case IMPLICIT_LITTLE_ENDIAN:
-    case JPEG_2000:
-    case JPEG_2000_LOSSLESS_ONLY:
-    case JPEG_2000_MC:
-    case JPEG_2000_MC_LOSSLESS_ONLY:
-    case JPEG_BASELINE:
-    case JPEG_EXTENDED_2_4:
-    case JPEG_EXTENDED_3_5:
-    case JPEG_SPEC_NON_HIER_6_8:
-    case JPEG_SPEC_NON_HIER_7_9:
-    case JPEG_FULL_PROG_NON_HIER_10_12:
-    case JPEG_FULL_PROG_NON_HIER_11_13:
-    case JPEG_LOSSLESS_NON_HIER_14:
-    case JPEG_LOSSLESS_NON_HIER_15:
-    case JPEG_EXTENDED_HIER_16_18:
-    case JPEG_EXTENDED_HIER_17_19:
-    case JPEG_SPEC_HIER_20_22:
-    case JPEG_SPEC_HIER_21_23:
-    case JPEG_FULL_PROG_HIER_24_26:
-    case JPEG_FULL_PROG_HIER_25_27:
-    case JPEG_LOSSLESS_HIER_28:
-    case JPEG_LOSSLESS_HIER_29:
-    case JPEG_LOSSLESS_HIER_14:
-    case JPEG_LS_LOSSLESS:
-    case JPEG_LS_LOSSY:
-    case JPIP_REFERENCED:
-    case JPIP_REFERENCED_DEFLATE:
-    case MPEG2_MPHL:
-    case MPEG2_MPML:
-    case MPEG4_AVC_H264_HP_LEVEL_4_1:
-    case MPEG4_AVC_H264_BDC_HP_LEVEL_4_1:
-    case MPEG4_AVC_H264_HP_LEVEL_4_2_2D:
-    case MPEG4_AVC_H264_HP_LEVEL_4_2_3D:
-    case MPEG4_AVC_H264_STEREO_HP_LEVEL_4_2:
-    case SMPTE_ST_2110_20_UNCOMPRESSED_PROGRESSIVE_ACTIVE_VIDEO:
-    case SMPTE_ST_2110_20_UNCOMPRESSED_INTERLACED_ACTIVE_VIDEO:
-    case SMPTE_ST_2110_30_PCM_DIGITAL_AUDIO:
-    case PRIVATE_SYNTAX_1:
-    case PRIVATE_SYNTAX_2:
-    case RLE:
-        break;
-
-    case INVALID_TRANSFER_SYNTAX:
-
         printf("Warning: Invalid transfer syntax (%s) specified\n", GetSyntaxDescription(*A_syntax));
         printf("         Not sending image.\n");
         MC_Free_File(A_msgID);
         fflush(stdout);
-
         return SAMP_FALSE;
     }
 
@@ -1407,9 +1485,6 @@ static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
 } /* MediaToFileObj() */
 
 
-
-
-
 /****************************************************************************
  *
  *  Function    :    CheckFileFormat
@@ -1429,12 +1504,39 @@ static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
  *                   objects.
  *
  ****************************************************************************/
+
+FORMAT_ENUM CheckSignatureOfMediaFile(FILE*& fp)
+{
+    //Associated with CheckFileFormat checks signature of Media file 
+    char signature[5] = "\0\0\0\0";
+
+    /*
+     * Read the signature, only 4 bytes
+     */
+    if (fread(signature, 1, 4, fp) == 4)
+    {
+        /*
+         * if it is the signature, return true.  The file is
+         * definately in the DICOM Part 10 format.
+         */
+        if (!strcmp(signature, "DICM"))
+        {
+            fclose(fp);
+            return MEDIA_FORMAT;
+        }
+    }
+
+    return UNKNOWN_FORMAT;
+
+}
+
 static FORMAT_ENUM CheckFileFormat(char* A_filename)
 {
     FILE* fp;
-    char             signature[5] = "\0\0\0\0";
-    char             vR[3] = "\0\0";
 
+    //char             vR[3] = "\0\0";
+
+    /*
     union
     {
         unsigned short   groupNumber;
@@ -1455,33 +1557,19 @@ static FORMAT_ENUM CheckFileFormat(char* A_filename)
         char      l[4];
     } along;
 
-
-
+    */
     if ((fp = fopen(A_filename, BINARY_READ)) != NULL)
     {
         if (fseek(fp, 128, SEEK_SET) == 0)
         {
-            /*
-             * Read the signature, only 4 bytes
-             */
-            if (fread(signature, 1, 4, fp) == 4)
-            {
-                /*
-                 * if it is the signature, return true.  The file is
-                 * definately in the DICOM Part 10 format.
-                 */
-                if (!strcmp(signature, "DICM"))
-                {
-                    fclose(fp);
-                    return MEDIA_FORMAT;
-                }
-            }
+            return CheckSignatureOfMediaFile(fp);
         }
+
     }
-        /*
-         * Now try and determine the format if it is not media
-         */
-        
+    /*
+     * Now try and determine the format if it is not media
+     */
+
     return UNKNOWN_FORMAT;
 } /* CheckFileFormat() */
 

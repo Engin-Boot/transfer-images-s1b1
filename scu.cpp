@@ -159,8 +159,8 @@ static bool CheckHostandPort(STORAGE_OPTIONS* A_options);
 static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[]);
 static bool CheckIfHelp(string str, int A_argc);
 static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
-static bool CheckOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static bool ExtraOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static bool CheckOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static bool ExtraOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
 static void RemoteAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
 static void StartImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
 static void StopImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
@@ -645,7 +645,7 @@ static bool CheckHostandPort(STORAGE_OPTIONS* A_options)
 }
 static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[])
 {
-    for (int i = 1; i < A_argc; i++)
+    for (int i = 0; i < A_argc; i++)
     {
         string str(A_argv[i]);
         transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -660,30 +660,32 @@ static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[])
 static bool CheckIfHelp(string str, int A_argc)
 {
     if ((str == "-h") || (A_argc < 3))
+    {
         return true;
+    }
     return false;
 }
 static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
-    int       argCount = 0;
     for (int i = 1; i < A_argc; i++)
     {
-        if (CheckOptions(argCount, i, A_argv, A_options)==false)
+        if (CheckOptions(i, A_argv, A_options)==false)
         {
             printf("Unkown option: %s\n", A_argv[i]);
         }
     }
 }
-static bool CheckOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+static bool CheckOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
-    if (MapOptions(i, A_argv, A_options) == false && ExtraOptions(argCount,i,A_argv,A_options) == false)
+    if (MapOptions(i, A_argv, A_options) == false && ExtraOptions(i,A_argv,A_options) == false)
     {
         return false;
     }
     return true;
 }
-static bool ExtraOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+static bool ExtraOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
+    static int argCount = 0;
     argCount++;
     bool f = false;
     typedef void (*Fnptr2)(int, char* [], STORAGE_OPTIONS*);

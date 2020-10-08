@@ -154,6 +154,24 @@ typedef struct instance_node
 int main(int argc, char** argv);
 
 static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void RemoteManagement(STORAGE_OPTIONS* A_options);
+static bool CheckHostandPort(STORAGE_OPTIONS* A_options);
+static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[]);
+static bool CheckIfHelp(string str, int A_argc);
+static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
+static bool CheckOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static bool ExtraOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void RemoteAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void StartImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void StopImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static bool MapOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void LocalAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void LocalPort(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void Filename(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void ServiceList(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void RemoteHost(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void RemotePort(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
+static void Verbose(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
 static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname);
 static void list_updation(InstanceNode** A_list, InstanceNode* newNode);
 static SAMP_BOOLEAN UpdateNode(InstanceNode* A_node);
@@ -522,7 +540,7 @@ int main(int argc, char** argv)
  ********************************************************************/
 static void PrintCmdLine(void)
 {
-    printf("\nUsage stor_scu remote_ae start stop -f filename -a local_ae -b local_port -n remote_host -p remote_port -l service_list -v \n");
+    printf("\nUsage SCU remote_ae start stop -f filename -a local_ae -b local_port -n remote_host -p remote_port -l service_list -v \n");
     printf("\n");
     printf("\t remote_ae       name of remote Application Entity Title to connect with\n");
     printf("\t start           start image number (not required if -f specified)\n");
@@ -558,14 +576,10 @@ static void PrintCmdLine(void)
  *************************************************************************/
 static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
-    int       i = 0, argCount = 0;
-
-    if (A_argc < 3)
+    if (PrintHelp(A_argc,A_argv) == SAMP_FALSE)
     {
-        PrintCmdLine();
         return SAMP_FALSE;
     }
-
     /*
      * Set default values
      */
@@ -591,114 +605,10 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
     A_options->FileList[0] = '\0';
 
     /*
-     * Loop through each arguement
+     * Loop through each argument
      */
-    for (i = 1; i < A_argc; i++)
-    {
-        string str(A_argv[i]);
-        transform(str.begin(), str.end(), str.begin(), ::tolower);
-        if ((str == "-h") || !strcmp(A_argv[i], "-?"))
-        {
-            PrintCmdLine();
-            return SAMP_FALSE;
-        }
-        else if (str == "-a")
-        {
-            /*
-             * Set the Local AE
-             */
-            i++;
-            strcpy(A_options->LocalAE, A_argv[i]);
-        }
-        else if (str == "-b")
-        {
-            /*
-             * Local Port Number
-             */
-            i++;
-            A_options->ListenPort = atoi(A_argv[i]);
-
-        }
-        else if (str == "-f")
-        {
-            /*
-             * Config file with filenames
-             */
-            i++;
-            A_options->UseFileList = SAMP_TRUE;
-            strcpy(A_options->FileList, A_argv[i]);
-        }
-        else if (str == "-l")
-        {
-            /*
-             * Service List
-             */
-            i++;
-            strcpy(A_options->ServiceList, A_argv[i]);
-        }
-        else if (str == "-n")
-        {
-            /*
-             * Remote Host Name
-             */
-            i++;
-            strcpy(A_options->RemoteHostname, A_argv[i]);
-        }
-        else if (str == "-p")
-        {
-            /*
-             * Remote Port Number
-             */
-            i++;
-            A_options->RemotePort = atoi(A_argv[i]);
-
-        }
-        else if (str == "-v")
-        {
-            /*
-             * Verbose mode
-             */
-            A_options->Verbose = SAMP_TRUE;
-        }
-        else
-        {
-            /*
-             * Parse through the rest of the options
-             */
-
-            argCount++;
-            switch (argCount)
-            {
-            case 1:
-                strcpy(A_options->RemoteAE, A_argv[i]);
-                break;
-            case 2:
-                A_options->StartImage = A_options->StopImage = atoi(A_argv[i]);
-                break;
-            case 3:
-                A_options->StopImage = atoi(A_argv[i]);
-                break;
-            default:
-                printf("Unkown option: %s\n", A_argv[i]);
-                break;
-            }
-        }
-    }
-
-    /*
-    * If the hostname & port are specified on the command line,
-    * the user may not have the remote system configured in the
-    * mergecom.app file.  In this case, force the default service
-    * list, so we can attempt to make a connection, or else we would
-    * fail.
-    */
-
-    if (A_options->RemoteHostname[0]
-        && !A_options->ServiceList[0]
-        && (A_options->RemotePort != -1))
-    {
-        strcpy(A_options->ServiceList, "Storage_SCU_Service_List");
-    }
+    OptionHandling(A_argc,A_argv,A_options);
+    RemoteManagement(A_options);
     if (A_options->StopImage < A_options->StartImage)
     {
         printf("Image stop number must be greater than or equal to image start number.\n");
@@ -710,6 +620,174 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
 
 }/* TestCmdLine() */
 
+static void RemoteManagement(STORAGE_OPTIONS* A_options)
+{
+    /*
+        * If the hostname & port are specified on the command line,
+        * the user may not have the remote system configured in the
+        * mergecom.app file.  In this case, force the default service
+        * list, so we can attempt to make a connection, or else we would
+        * fail.
+        */
+
+    if (!A_options->ServiceList[0] && CheckHostandPort(A_options))
+    {
+        strcpy(A_options->ServiceList, "Storage_SCU_Service_List");
+    }
+}
+static bool CheckHostandPort(STORAGE_OPTIONS* A_options)
+{
+    if (A_options->RemoteHostname[0] && (A_options->RemotePort != -1))
+    {
+        return true;
+    }
+    return false;
+}
+static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[])
+{
+    for (int i = 1; i < A_argc; i++)
+    {
+        string str(A_argv[i]);
+        transform(str.begin(), str.end(), str.begin(), ::tolower);
+        if (CheckIfHelp(str,A_argc)==true)
+        {
+            PrintCmdLine();
+            return SAMP_FALSE;
+        }
+    }
+    return SAMP_TRUE;
+} 
+static bool CheckIfHelp(string str, int A_argc)
+{
+    if ((str == "-h") || (A_argc < 3))
+        return true;
+    return false;
+}
+static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    int       argCount = 0;
+    for (int i = 1; i < A_argc; i++)
+    {
+        if (CheckOptions(argCount, i, A_argv, A_options)==false)
+        {
+            printf("Unkown option: %s\n", A_argv[i]);
+        }
+    }
+}
+static bool CheckOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    if (MapOptions(i, A_argv, A_options) == false && ExtraOptions(argCount,i,A_argv,A_options) == false)
+    {
+        return false;
+    }
+    return true;
+}
+static bool ExtraOptions(int argCount, int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    argCount++;
+    bool f = false;
+    typedef void (*Fnptr2)(int, char* [], STORAGE_OPTIONS*);
+    map<int, Fnptr2> extraoptions;
+    extraoptions[1] = RemoteAE;
+    extraoptions[2] = StartImage;
+    extraoptions[3] = StopImage;
+    map<int, Fnptr2>::iterator itr;
+    for (itr = extraoptions.begin(); itr != extraoptions.end(); ++itr)
+    {
+        if (argCount == itr->first)
+        {
+            f = true;
+            extraoptions[argCount](i, A_argv, A_options);
+        }
+    }
+    return f;
+
+}
+static void RemoteAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    strcpy(A_options->RemoteAE, A_argv[i]);
+}
+static void StartImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    A_options->StartImage = A_options->StopImage = atoi(A_argv[i]);
+}
+static void StopImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    A_options->StopImage = atoi(A_argv[i]);
+}
+
+static bool MapOptions(int i, char* A_argv[],STORAGE_OPTIONS* A_options)
+{
+    bool f = false;
+    typedef void (*Fnptr1)(int, char* [], STORAGE_OPTIONS*);
+    map<string, Fnptr1> optionmap;
+    optionmap["-a"] = LocalAE;
+    optionmap["-b"] = LocalPort;
+    optionmap["-f"] = Filename;
+    optionmap["-l"] = ServiceList;
+    optionmap["-n"] = RemoteHost;
+    optionmap["-p"] = RemotePort;
+    optionmap["-v"] = Verbose;
+    map<string, Fnptr1>::iterator itr;
+    string str(A_argv[i]);
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+    for (itr = optionmap.begin(); itr != optionmap.end(); ++itr)
+    {
+        if (str == itr->first)
+        {
+            f = true;
+            optionmap[str](i, A_argv, A_options);
+        }
+    }
+    return f;
+}
+static void LocalAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    strcpy(A_options->LocalAE, A_argv[i]);
+}
+static void LocalPort(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    A_options->ListenPort = atoi(A_argv[i]);
+}
+static void Filename(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    A_options->UseFileList = SAMP_TRUE;
+    strcpy(A_options->FileList, A_argv[i]);
+}
+static void ServiceList(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    strcpy(A_options->ServiceList, A_argv[i]);
+}
+static void RemoteHost(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    strcpy(A_options->RemoteHostname, A_argv[i]);
+}
+static void RemotePort(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    i++;
+    A_options->RemotePort = atoi(A_argv[i]);
+}
+static void Verbose(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
+{
+    A_options->Verbose = SAMP_TRUE;
+}
+
+/*
+        else
+        {
+        /*
+         * Parse through the rest of the options
+         *
+
+         
+        }
+        
+*/
 
 /****************************************************************************
  *

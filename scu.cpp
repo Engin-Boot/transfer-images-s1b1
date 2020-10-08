@@ -1029,48 +1029,76 @@ static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool,InstanceNode* A_node)
  *
  ****************************************************************************/
 
- /*
- SAMP_BOOLEAN CheckMCStatus(MC_STATUS mcStatus, const char* ErrorMessage)
- {
-     if (mcStatus != MC_NORMAL_COMPLETION)
-     {
-         PrintError(ErrorMessage, mcStatus);
-         fflush(stdout);
-         return SAMP_TRUE;
-     }
- }
 
- bool SetService(InstanceNode*& A_node)
- {
-     MC_STATUS mcStatus;
+bool CheckIfMCStatusNotOk(MC_STATUS mcStatus, const char* ErrorMessage)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError(ErrorMessage, mcStatus);
+        fflush(stdout);
+        return true;
+    }
+    return false;
+}
 
-     mcStatus = MC_Set_Service_Command(A_node->msgID, A_node->serviceName, C_STORE_RQ);
-     if (CheckMCStatus(mcStatus, "MC_Set_Service_Command failed") == SAMP_TRUE)
-     {
-         return false;
-     }
-     mcStatus = MC_Set_Value_From_String(A_node->msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, A_node->SOPInstanceUID);
-     if (CheckMCStatus(mcStatus, "MC_Set_Value_From_String failed for affected SOP Instance UID") == SAMP_TRUE)
-     {
-         return false;
-     }
-     return true;
+bool setServiceAndSOP(InstanceNode* A_node)
+{
+    MC_STATUS mcStatus;
+    mcStatus = MC_Set_Service_Command(A_node->msgID, A_node->serviceName, C_STORE_RQ);
+    if (CheckIfMCStatusNotOk(mcStatus, "MC_Set_Service_Command failed"))
+    {
+        return true;
+    }
+    mcStatus = MC_Set_Value_From_String(A_node->msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, A_node->SOPInstanceUID);
+    if (CheckIfMCStatusNotOk(mcStatus, "MC_Set_Value_From_String failed for affected SOP Instance UID"))
+    {
+        return true;
+    }
+    return false;
+}
+bool GetSOPUIDAndSetService(InstanceNode* A_node)
+{    //Gives Error MC_Release_Application failed: Application ID parameter is invalid
+    MC_STATUS mcStatus;
+    mcStatus = MC_Get_MergeCOM_Service(A_node->SOPClassUID, A_node->serviceName, sizeof(A_node->serviceName));
 
- }
- bool GetSOPUIDAndSetService(InstanceNode*& A_node)
- {    //Gives Error MC_Release_Application failed: Application ID parameter is invalid
-     MC_STATUS mcStatus;
-     mcStatus = MC_Get_MergeCOM_Service(A_node->SOPClassUID, A_node->serviceName, sizeof(A_node->serviceName));
-     if (CheckMCStatus(mcStatus, "MC_Get_MergeCOM_Service failed") == SAMP_TRUE)
-     {
-         return false;
-     }
+    if (CheckIfMCStatusNotOk(mcStatus, "MC_Get_MergeCOM_Service failed"))
+    {
+        return true;
+    }
+    if (setServiceAndSOP(A_node))
+    {
+        return true;
+    }
 
-     if(!SetService(A_node))
-         return false;
+    return false;
 
-     return true;
- }*/
+}
+
+bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode* A_node)
+{
+    std::map<MC_STATUS, string> SendRequestMap;
+
+    SendRequestMap[MC_ASSOCIATION_ABORTED] = "MC_Send_Request_Message failed";
+    SendRequestMap[MC_SYSTEM_ERROR] = "MC_Send_Request_Message failed";
+    SendRequestMap[MC_UNACCEPTABLE_SERVICE] = "MC_Send_Request_Message failed";
+
+
+    if (SendRequestMap.find(mcStatus) != SendRequestMap.end()) {
+        CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");
+        return true;
+    }
+    else if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        /* This is a failure condition we can continue with */
+
+        CheckIfMCStatusNotOk(mcStatus, "Warning: MC_Send_Request_Message failed");
+        return (false);
+    }
+
+    A_node->imageSent = SAMP_TRUE;
+    fflush(stdout);
+    return false;
+}
 
 static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node)
 {
@@ -1080,39 +1108,13 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
 
     /* Get the SOP class UID and set the service */
 
-    mcStatus = MC_Get_MergeCOM_Service(A_node->SOPClassUID, A_node->serviceName, sizeof(A_node->serviceName));
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Get_MergeCOM_Service failed", mcStatus);
-        fflush(stdout);
-        return (SAMP_TRUE);
-    }
-
-
-    mcStatus = MC_Set_Service_Command(A_node->msgID, A_node->serviceName, C_STORE_RQ);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Set_Service_Command failed", mcStatus);
-        fflush(stdout);
-        return (SAMP_TRUE);
-    }
-
-
     /* set affected SOP Instance UID */
 
-    mcStatus = MC_Set_Value_From_String(A_node->msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, A_node->SOPInstanceUID);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Set_Value_From_String failed for affected SOP Instance UID", mcStatus);
-        fflush(stdout);
-        return (SAMP_TRUE);
-    }
-    /*
-    if (!GetSOPUIDAndSetService(A_node))
+    if (GetSOPUIDAndSetService(A_node))
     {
         return SAMP_TRUE;
     }
-    */
+   
     /*
      *  Send the message
      */
@@ -1131,23 +1133,9 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
     }
 
     mcStatus = MC_Send_Request_Message(A_associationID, A_node->msgID);
-    if ((mcStatus == MC_ASSOCIATION_ABORTED) || (mcStatus == MC_SYSTEM_ERROR) || (mcStatus == MC_UNACCEPTABLE_SERVICE))
-    {
-        /* At this point, the association has been dropped, or we should drop it in the case of error. */
-        PrintError("MC_Send_Request_Message failed", mcStatus);
-        fflush(stdout);
-        return (SAMP_FALSE);
-    }
-    else if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        /* This is a failure condition we can continue with */
-        PrintError("Warning: MC_Send_Request_Message failed", mcStatus);
-        fflush(stdout);
-        return (SAMP_TRUE);
-    }
 
-    A_node->imageSent = SAMP_TRUE;
-    fflush(stdout);
+    if (checkSendRequestMessage(mcStatus, A_node))
+        return (SAMP_FALSE);
 
     return (SAMP_TRUE);
 }
@@ -1449,6 +1437,112 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
  *                  in the DICOM Part 10 (media) format.
  *
  ****************************************************************************/
+int GetWorkBufferSize()
+{
+    MC_STATUS mcStatus = MC_NORMAL_COMPLETION;
+    int length = 0;
+
+    mcStatus = MC_Get_Int_Config_Value(WORK_BUFFER_SIZE, &length);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        length = 64 * 1024;
+    }
+    return length;
+}
+
+bool AllocateBuffer(CBinfo*& callbackInfo)
+{
+    if (callbackInfo->bufferLength == 0)
+    {
+
+        int length = GetWorkBufferSize();
+
+        callbackInfo->bufferLength = length;
+    }
+
+    callbackInfo->buffer = (char*)(malloc(callbackInfo->bufferLength));
+    if (callbackInfo->buffer == NULL)
+    {
+        printf("Error: failed to allocate file read buffer [%d] kb", (int)callbackInfo->bufferLength);
+        return false;
+    }
+    return true;
+}
+
+void checkIfBufferSet(int retStatus)
+{
+    if (retStatus != 0)
+    {
+        printf("WARNING:  Unable to set IO buffering on input file.\n");
+    }
+}
+
+bool firstCallProcedure(char*& A_filename, CBinfo*& callbackInfo, int& retStatus, int& A_isFirst)
+{
+    if (A_isFirst)
+    {
+        callbackInfo->bytesRead = 0;
+        callbackInfo->fp = fopen(A_filename, BINARY_READ);
+
+        retStatus = setvbuf(callbackInfo->fp, (char*)NULL, _IOFBF, 32768);
+        checkIfBufferSet(retStatus);
+
+        if (AllocateBuffer(callbackInfo) == false)
+            return false;
+
+    }
+}
+
+bool SetBuffer(char*& A_filename, CBinfo*& callbackInfo, int& retStatus, int& A_isFirst, void* A_userInfo)
+{
+    if (!A_userInfo)
+        return false;
+
+    if (firstCallProcedure(A_filename, callbackInfo, retStatus, A_isFirst) == false)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool closeCallBackFile(CBinfo*& callbackInfo, int*& A_isLast)
+{
+    if (ferror(callbackInfo->fp))
+    {
+        free(callbackInfo->buffer);
+        callbackInfo->buffer = NULL;
+
+        return false;
+    }
+
+
+    if (feof(callbackInfo->fp))
+    {
+        *A_isLast = 1;
+
+        fclose(callbackInfo->fp);
+        callbackInfo->fp = NULL;
+    }
+    else
+        *A_isLast = 0;
+
+    return true;
+}
+
+bool ReadInCallBackFile(CBinfo*& callbackInfo, size_t& bytes_read, int*& A_isLast)
+{
+    if (!callbackInfo->fp)
+        return MC_CANNOT_COMPLY;
+
+    bytes_read = fread(callbackInfo->buffer, 1, callbackInfo->bufferLength, callbackInfo->fp);
+
+    if (closeCallBackFile(callbackInfo, A_isLast) == false)
+        return false;
+
+    return true;
+}
+
 static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
     void* A_userInfo,
     int* A_dataSize,
@@ -1461,62 +1555,11 @@ static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
     size_t          bytes_read;
     int             retStatus;
 
-    if (!A_userInfo)
+    if (SetBuffer(A_filename, callbackInfo, retStatus, A_isFirst, A_userInfo) == false)
         return MC_CANNOT_COMPLY;
-
-    if (A_isFirst)
-    {
-        callbackInfo->bytesRead = 0;
-        callbackInfo->fp = fopen(A_filename, BINARY_READ);
-
-        retStatus = setvbuf(callbackInfo->fp, (char*)NULL, _IOFBF, 32768);
-        if (retStatus != 0)
-        {
-            printf("WARNING:  Unable to set IO buffering on input file.\n");
-        }
-
-        if (callbackInfo->bufferLength == 0)
-        {
-            MC_STATUS mcStatus = MC_NORMAL_COMPLETION;
-            int length = 0;
-
-            mcStatus = MC_Get_Int_Config_Value(WORK_BUFFER_SIZE, &length);
-            if (mcStatus != MC_NORMAL_COMPLETION)
-            {
-                length = 64 * 1024;
-            }
-            callbackInfo->bufferLength = length;
-        }
-
-        callbackInfo->buffer = (char*)(malloc(callbackInfo->bufferLength));
-        if (callbackInfo->buffer == NULL)
-        {
-            printf("Error: failed to allocate file read buffer [%d] kb", (int)callbackInfo->bufferLength);
-            return MC_CANNOT_COMPLY;
-        }
-    }
-
-    if (!callbackInfo->fp)
+    
+    if (ReadInCallBackFile(callbackInfo, bytes_read, A_isLast) == false)
         return MC_CANNOT_COMPLY;
-
-    bytes_read = fread(callbackInfo->buffer, 1, callbackInfo->bufferLength, callbackInfo->fp);
-    if (ferror(callbackInfo->fp))
-    {
-        free(callbackInfo->buffer);
-        callbackInfo->buffer = NULL;
-
-        return MC_CANNOT_COMPLY;
-    }
-
-    if (feof(callbackInfo->fp))
-    {
-        *A_isLast = 1;
-
-        fclose(callbackInfo->fp);
-        callbackInfo->fp = NULL;
-    }
-    else
-        *A_isLast = 0;
 
     *A_dataBuffer = callbackInfo->buffer;
     *A_dataSize = (int)bytes_read;

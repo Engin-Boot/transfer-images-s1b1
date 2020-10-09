@@ -15,11 +15,11 @@ using namespace std;
 #include <fcntl.h>
 #endif
 
- /*
-  * Merge DICOM Toolkit Includes
-  */
+/*
+ * Merge DICOM Toolkit Includes
+ */
 #include "mc3media.h"
-  //#include "mc3msg.h"
+ //#include "mc3msg.h"
 #include "mergecom.h"
 #include "diction.h"
 //#include "mc3services.h"
@@ -200,32 +200,131 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
  *  Description :   Main routine for DICOM Storage Service Class SCU
  *
  ****************************************************************************/
-int  main(int argc, char** argv);
-int main(int argc, char** argv)
+ //int  main(int argc, char** argv);
+
+
+
+ //typedef bool (*FileInputTypeFunction)(STORAGE_OPTIONS& options, FILE*& fp, char* fname, int& fstatus, int& imageCurrent, InstanceNode* instanceList);
+ //typedef std::map<SAMP_BOOLEAN, FileInputTypeFunction>MapToFileInputType;
+ /*
+ bool ReadFileByFILENAME(FILE*& fp, int& fstatus, char* fname, InstanceNode* instanceList)
+ {
+     SAMP_BOOLEAN sampBool;
+
+     for (;;) /* forever loop until break *
+     {
+         fstatus = fscanf(fp, "%s", fname);
+         if (fstatus == EOF || fstatus == 0)
+         {
+             fclose(fp);
+             break;
+         }
+
+         if (fname[0] == '#') /* skip commented out rows *
+             continue;
+
+         sampBool = AddFileToList(&instanceList, fname);
+         if (!sampBool)
+         {
+             printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
+         }
+     }
+     return true;
+ }
+ bool ReadFileFromCommandLine(STORAGE_OPTIONS& options, FILE*& fp, char* fname, int& fstatus, int& imageCurrent, InstanceNode* instanceList)
+ {
+     SAMP_BOOLEAN sampBool;
+     fp = fopen(options.FileList, TEXT_READ);
+     if (!fp)
+     {
+         printf("ERROR: Unable to open %s.\n", options.FileList);
+         fflush(stdout);
+         return(false);
+     }
+     ReadFileByFILENAME(fp, fstatus, fname, instanceList);
+
+ }
+ bool ReadFileFromStartStopPosition(STORAGE_OPTIONS& options, FILE*& fp, char* fname, int& fstatus, int& imageCurrent, InstanceNode* instanceList)
+ {
+     SAMP_BOOLEAN sampBool;
+     for (imageCurrent = options.StartImage; imageCurrent <= options.StopImage; imageCurrent++)
+     {
+         sprintf(fname, "%d.img", imageCurrent);
+         sampBool = AddFileToList(&instanceList, fname);
+         if (!sampBool)
+         {
+             printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
+         }
+     }
+     return true;
+ }
+ bool CreateListofInputFiles(STORAGE_OPTIONS& options,FILE*& fp, char* fname,int& fstatus, int& imageCurrent, InstanceNode* instanceList)
+ {
+     SAMP_BOOLEAN sampBool;
+     MapToFileInputType m;
+     m.emplace(SAMP_TRUE, &ReadFileFromCommandLine);
+     m.emplace(SAMP_FALSE, &ReadFileFromStartStopPosition);
+
+     return(m[options.UseFileList](options, fp, fname, fstatus, imageCurrent,instanceList));
+ }
+ */
+
+class mainclass
 {
+public:
     SAMP_BOOLEAN            sampBool;
     STORAGE_OPTIONS         options;
     MC_STATUS               mcStatus;
-    int                     applicationID = -1, associationID = -1, imageCurrent = 0;
-    int                     imagesSent = 0L, totalImages = 0L, fstatus = 0;
-    double                  seconds = 0.0;
-    void* startTime = NULL, * imageStartTime = NULL;
-    char                    fname[512] = { 0 };  /* Extra long, just in case */
+    int                     applicationID, associationID, imageCurrent;
+    int                     imagesSent, totalImages, fstatus;
+    double                  seconds;
+
+
+    char* fname; /* Extra long, just in case */
     ServiceInfo             servInfo;
-    size_t                  totalBytesRead = 0L;
-    InstanceNode* instanceList = NULL, * node = NULL;
+    size_t                  totalBytesRead;
+    InstanceNode* instanceList, * node;
     FILE* fp = NULL;
 
-    /*
-     * Test the command line parameters, and populate the options
-     * structure with these parameters
-     */
-    sampBool = TestCmdLine(argc, argv, &options);
-    if (sampBool == SAMP_FALSE)
+    void Initializemainclass(STORAGE_OPTIONS& opt, int& applicationID, int& associationID, int& imageCurrent, int& imagesSent, int& totalImages, int& fstatus, char* fname, ServiceInfo& servInfo, size_t& totalBytesRead)
     {
-        return(EXIT_FAILURE);
+
+        cout << "initialising class members" << endl;
+        this->options = opt;
+        this->applicationID = applicationID;
+        this->associationID = associationID;
+        this->imageCurrent = imageCurrent;
+        this->imagesSent = imagesSent;
+        this->totalImages = totalImages;
+        this->fstatus = fstatus;
+        this->fname = fname;
+        this->servInfo = servInfo;
+        this->totalBytesRead = totalBytesRead;
+        this->instanceList = NULL;
+        this->node = NULL;
+        this->fp = NULL;
+        cout << "initialising class members" << endl;
     }
 
+    bool InitializeApplication();
+    bool InitializeList();
+    void ReadFileByFILENAME();
+    void ReadFileFromStartStopPosition();
+    bool CreateAssociation();
+
+    void StartSendImage();
+    void CloseAssociation();
+
+    void VerboseBeforeConnection();
+    void VerboseAfterConnection();
+    void VerboseTransferSyntax();
+
+};
+
+bool mainclass::InitializeApplication()
+{
+    MC_STATUS mcStatus;
+    cout << 6 << endl;
     /* ------------------------------------------------------- */
     /* This call MUST be the first call made to the library!!! */
     /* ------------------------------------------------------- */
@@ -233,9 +332,9 @@ int main(int argc, char** argv)
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
         PrintError("Unable to initialize library", mcStatus);
-        return (EXIT_FAILURE);
+        return (false);
     }
-
+    cout << 7 << endl;
     /*
      *  Register this DICOM application
      */
@@ -245,15 +344,14 @@ int main(int argc, char** argv)
         printf("Unable to register \"%s\":\n", options.LocalAE);
         printf("\t%s\n", MC_Error_Message(mcStatus));
         fflush(stdout);
-        return(EXIT_FAILURE);
+        return(false);
     }
+    return mainclass::InitializeList();
+}
 
-    /*
-     * Create a linked list of all files to be transferred.
-     * Retrieve the list from a specified file on the command line,
-     * or generate the list from the start & stop numbers on the
-     * command line
-     */
+bool mainclass::InitializeList()
+{
+    SAMP_BOOLEAN sampBool;
     if (options.UseFileList)
     {
         /* Read the command line file to create the list */
@@ -262,44 +360,82 @@ int main(int argc, char** argv)
         {
             printf("ERROR: Unable to open %s.\n", options.FileList);
             fflush(stdout);
-            return(EXIT_FAILURE);
+            return(false);
         }
-
-        for (;;) /* forever loop until break */
-        {
-            fstatus = fscanf(fp, "%s", fname);
-            if (fstatus == EOF || fstatus == 0)
-            {
-                fclose(fp);
-                break;
-            }
-
-            if (fname[0] == '#') /* skip commented out rows */
-                continue;
-
-            sampBool = AddFileToList(&instanceList, fname);
-            if (!sampBool)
-            {
-                printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
-            }
-        }
+        mainclass::ReadFileByFILENAME();
     }
     else
     {
         /* Traverse through the possible names and add them to the list based on the start/stop count */
-        for (imageCurrent = options.StartImage; imageCurrent <= options.StopImage; imageCurrent++)
+        mainclass::ReadFileFromStartStopPosition();
+    }
+    totalImages = GetNumNodes(instanceList);
+    mainclass::VerboseBeforeConnection();
+    return mainclass::CreateAssociation();
+
+}
+
+void mainclass::ReadFileByFILENAME()
+{
+    for (;;) /* forever loop until break */
+    {
+        fstatus = fscanf(fp, "%s", fname);
+        if (fstatus == EOF || fstatus == 0)
         {
-            sprintf(fname, "%d.img", imageCurrent);
-            sampBool = AddFileToList(&instanceList, fname);
-            if (!sampBool)
-            {
-                printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
-            }
+            fclose(fp);
+            break;
+        }
+
+        if (fname[0] == '#') /* skip commented out rows */
+            continue;
+
+        sampBool = AddFileToList(&instanceList, fname);
+        if (!sampBool)
+        {
+            printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
         }
     }
+}
+void mainclass::ReadFileFromStartStopPosition()
+{
+    for (imageCurrent = options.StartImage; imageCurrent <= options.StopImage; imageCurrent++)
+    {
+        sprintf(fname, "%d.img", imageCurrent);
+        sampBool = AddFileToList(&instanceList, fname);
+        if (!sampBool)
+        {
+            printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
+        }
+    }
+}
 
-    totalImages = GetNumNodes(instanceList);
+bool mainclass::CreateAssociation()
+{
+    mcStatus = MC_Open_Association(applicationID,
+        &associationID,
+        options.RemoteAE,
+        options.RemotePort != -1 ? &options.RemotePort : NULL,
+        options.RemoteHostname[0] ? options.RemoteHostname : NULL,
+        options.ServiceList[0] ? options.ServiceList : NULL);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        printf("Unable to open association with \"%s\":\n", options.RemoteAE);
+        printf("\t%s\n", MC_Error_Message(mcStatus));
+        fflush(stdout);
+        return(false);
+    }
 
+    mcStatus = MC_Get_Association_Info(associationID, &options.asscInfo);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Get_Association_Info failed", mcStatus);
+    }
+    mainclass::VerboseAfterConnection();
+    return true;
+}
+
+void mainclass::VerboseBeforeConnection()
+{
     if (options.Verbose)
     {
         printf("Opening connection to remote system:\n");
@@ -321,28 +457,10 @@ int main(int argc, char** argv)
 
         printf("   Files to Send: %d \n", totalImages);
     }
+}
 
-    //startTime = GetIntervalStart();
-
-    mcStatus = MC_Open_Association(applicationID,
-        &associationID,
-        options.RemoteAE,
-        options.RemotePort != -1 ? &options.RemotePort : NULL,
-        options.RemoteHostname[0] ? options.RemoteHostname : NULL,
-        options.ServiceList[0] ? options.ServiceList : NULL);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        printf("Unable to open association with \"%s\":\n", options.RemoteAE);
-        printf("\t%s\n", MC_Error_Message(mcStatus));
-        fflush(stdout);
-        return(EXIT_FAILURE);
-    }
-
-    mcStatus = MC_Get_Association_Info(associationID, &options.asscInfo);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Get_Association_Info failed", mcStatus);
-    }
+void mainclass::VerboseAfterConnection()
+{
 
     if (options.Verbose)
     {
@@ -372,30 +490,32 @@ int main(int argc, char** argv)
          * negotiated so that they can be matched with the transfer
          * syntaxes of the images being sent.
          */
-        mcStatus = MC_Get_First_Acceptable_Service(associationID, &servInfo);
-        while (mcStatus == MC_NORMAL_COMPLETION)
-        {
-            printf("  %-30s: %s\n", servInfo.ServiceName, GetSyntaxDescription(servInfo.SyntaxType));
-            mcStatus = MC_Get_Next_Acceptable_Service(associationID, &servInfo);
-        }
-
-        if (mcStatus != MC_END_OF_LIST)
-        {
-            PrintError("Warning: Unable to get service info", mcStatus);
-        }
-        printf("\n\n");
+        mainclass::VerboseTransferSyntax();
     }
     else
         printf("Connected to remote system [%s]\n\n", options.RemoteAE);
+}
+void mainclass::VerboseTransferSyntax()
+{
+    MC_STATUS mcStatus;
+    mcStatus = MC_Get_First_Acceptable_Service(associationID, &servInfo);
+    while (mcStatus == MC_NORMAL_COMPLETION)
+    {
+        printf("  %-30s: %s\n", servInfo.ServiceName, GetSyntaxDescription(servInfo.SyntaxType));
+        mcStatus = MC_Get_Next_Acceptable_Service(associationID, &servInfo);
+    }
 
+    if (mcStatus != MC_END_OF_LIST)
+    {
+        PrintError("Warning: Unable to get service info", mcStatus);
+    }
+    printf("\n\n");
+}
 
-    fflush(stdout);
-
-    /*
-     *   Send all requested images.  Traverse through instanceList to
-     *   get all files to send
-     */
+void mainclass::StartSendImage()
+{
     node = instanceList;
+    cout << 8 << endl;
     while (node)
     {
         //imageStartTime = GetIntervalStart();
@@ -443,7 +563,6 @@ int main(int argc, char** argv)
             MC_Release_Application(&applicationID);
             break;
         }
-        // }
 
         if (node->imageSent == SAMP_TRUE)
         {
@@ -473,18 +592,23 @@ int main(int argc, char** argv)
         node = node->Next;
 
     }   /* END for loop for each image */
+    cout << 9 << endl;
+}
 
+void mainclass::CloseAssociation()
+{
     /*
-     * A failure on close has no real recovery.  Abort the association
-     * and continue on.
-     */
+    * A failure on close has no real recovery.  Abort the association
+    * and continue on.
+    */
+    cout << 10 << endl;
     mcStatus = MC_Close_Association(&associationID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
         PrintError("Close association failed", mcStatus);
         MC_Abort_Association(&associationID);
     }
-
+    cout << 11 << endl;
     /*
      * Calculate the transfer rate.  Note, for a real performance
      * numbers, a function other than time() to measure elapsed
@@ -505,6 +629,7 @@ int main(int argc, char** argv)
     /*
      * Release the dICOM Application
      */
+    cout << 12 << endl;
     mcStatus = MC_Release_Application(&applicationID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -514,6 +639,7 @@ int main(int argc, char** argv)
     /*
      * Free the node list's allocated memory
      */
+    cout << 13 << endl;
     FreeList(&instanceList);
 
     /*
@@ -521,10 +647,451 @@ int main(int argc, char** argv)
      */
     if (MC_Library_Release() != MC_NORMAL_COMPLETION)
         printf("Error releasing the library.\n");
+}
+int  main(int argc, char** argv);
+int main(int argc, char** argv)
+{
+    SAMP_BOOLEAN            sampBool;
+    STORAGE_OPTIONS         opt;
+    MC_STATUS               mcStatus;
+    int                     applicationID = -1, associationID = -1, imageCurrent = 0;
+    int                     imagesSent = 0L, totalImages = 0L, fstatus = 0;
+    double                  seconds = 0.0;
+    void* startTime = NULL, * imageStartTime = NULL;
+    char                    fname[512] = { 0 };  /* Extra long, just in case */
+    ServiceInfo             servInfo;
+    size_t                  totalBytesRead = 0L;
+    InstanceNode* instanceList = NULL, * node = NULL;
+    FILE* fp = NULL;
+
+    /*
+     * Test the command line parameters, and populate the options
+     * structure with these parameters
+     */
+    cout << 0 << endl;
+
+    mainclass obj;
+    obj.Initializemainclass(opt, applicationID, associationID, imageCurrent, imagesSent, totalImages, fstatus, fname, servInfo, totalBytesRead);
+    cout << 1 << endl;
+    sampBool = TestCmdLine(argc, argv, &(obj.options));
+    cout << 2 << endl;
+    if (sampBool == SAMP_FALSE)
+    {
+        cout << 3 << endl;
+        return(EXIT_FAILURE);
+    }
+
+    /* ------------------------------------------------------- */
+    /* This call MUST be the first call made to the library!!! */
+    /* ------------------------------------------------------- */
+    /*mcStatus = MC_Library_Initialization(NULL, NULL, NULL);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("Unable to initialize library", mcStatus);
+        return (EXIT_FAILURE);
+    }
+
+    /*
+     *  Register this DICOM application
+     *
+    mcStatus = MC_Register_Application(&applicationID, options.LocalAE);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        printf("Unable to register \"%s\":\n", options.LocalAE);
+        printf("\t%s\n", MC_Error_Message(mcStatus));
+        fflush(stdout);
+        return(EXIT_FAILURE);
+    }*/
+
+    /*
+     * Create a linked list of all files to be transferred.
+     * Retrieve the list from a specified file on the command line,
+     * or generate the list from the start & stop numbers on the
+     * command line
+     */
+     /*
+     if (options.UseFileList)
+     {
+         /* Read the command line file to create the list *
+         fp = fopen(options.FileList, TEXT_READ);
+         if (!fp)
+         {
+             printf("ERROR: Unable to open %s.\n", options.FileList);
+             fflush(stdout);
+             return(EXIT_FAILURE);
+         }
+
+         for (;;) /* forever loop until break *
+         {
+             fstatus = fscanf(fp, "%s", fname);
+             if (fstatus == EOF || fstatus == 0)
+             {
+                 fclose(fp);
+                 break;
+             }
+
+             if (fname[0] == '#') /* skip commented out rows *
+                 continue;
+
+             sampBool = AddFileToList(&instanceList, fname);
+             if (!sampBool)
+             {
+                 printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
+             }
+         }
+     }
+     else
+     {
+         /* Traverse through the possible names and add them to the list based on the start/stop count *
+         for (imageCurrent = options.StartImage; imageCurrent <= options.StopImage; imageCurrent++)
+         {
+             sprintf(fname, "%d.img", imageCurrent);
+             sampBool = AddFileToList(&instanceList, fname);
+             if (!sampBool)
+             {
+                 printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
+             }
+         }
+     }
+     */
+    cout << 4 << endl;
+    if (obj.InitializeApplication() == false) {
+        cout << 5 << endl;
+        return (EXIT_FAILURE);
+    }
+
+    //totalImages = GetNumNodes(instanceList);
+    /*
+    if (obj.options.Verbose)
+    {
+        printf("Opening connection to remote system:\n");
+        printf("    AE title: %s\n", obj.options.RemoteAE);
+        if (obj.options.RemoteHostname[0])
+            printf("    Hostname: %s\n", obj.options.RemoteHostname);
+        else
+            printf("    Hostname: Default in mergecom.app\n");
+
+        if (obj.options.RemotePort != -1)
+            printf("        Port: %d\n", obj.options.RemotePort);
+        else
+            printf("        Port: Default in mergecom.app\n");
+
+        if (obj.options.ServiceList[0])
+            printf("Service List: %s\n", obj.options.ServiceList);
+        else
+            printf("Service List: Default in mergecom.app\n");
+
+        printf("   Files to Send: %d \n", obj.totalImages);
+    }
+
+    */
+    //startTime = GetIntervalStart();
+/*
+    mcStatus = MC_Open_Association(applicationID,
+        &associationID,
+        options.RemoteAE,
+        options.RemotePort != -1 ? &options.RemotePort : NULL,
+        options.RemoteHostname[0] ? options.RemoteHostname : NULL,
+        options.ServiceList[0] ? options.ServiceList : NULL);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        printf("Unable to open association with \"%s\":\n", options.RemoteAE);
+        printf("\t%s\n", MC_Error_Message(mcStatus));
+        fflush(stdout);
+        return(EXIT_FAILURE);
+    }
+
+    mcStatus = MC_Get_Association_Info(associationID, &options.asscInfo);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Get_Association_Info failed", mcStatus);
+    }
+*/
+/*
+if (options.Verbose)
+{
+    printf("Connecting to Remote Application:\n");
+    printf("  Remote AE Title:          %s\n", options.asscInfo.RemoteApplicationTitle);
+    printf("  Local AE Title:           %s\n", options.asscInfo.LocalApplicationTitle);
+    printf("  Host name:                %s\n", options.asscInfo.RemoteHostName);
+    printf("  IP Address:               %s\n", options.asscInfo.RemoteIPAddress);
+    printf("  Local Max PDU Size:       %lu\n", options.asscInfo.LocalMaximumPDUSize);
+    printf("  Remote Max PDU Size:      %lu\n", options.asscInfo.RemoteMaximumPDUSize);
+    printf("  Max operations invoked:   %u\n", options.asscInfo.MaxOperationsInvoked);
+    printf("  Max operations performed: %u\n", options.asscInfo.MaxOperationsPerformed);
+    printf("  Implementation Version:   %s\n", options.asscInfo.RemoteImplementationVersion);
+    printf("  Implementation Class UID: %s\n", options.asscInfo.RemoteImplementationClassUID);
+
+    /*
+     * Print out User Identity information if negotiated
+     *
+    printf("  User Identity type:       None\n\n\n");
+
+    printf("Services and transfer syntaxes negotiated:\n");
+
+    /*
+     * Go through all of the negotiated services.  If encapsulated /
+     * compressed transfer syntaxes are supported, this code should be
+     * expanded to save the services & transfer syntaxes that are
+     * negotiated so that they can be matched with the transfer
+     * syntaxes of the images being sent.
+     *
+    mcStatus = MC_Get_First_Acceptable_Service(associationID, &servInfo);
+    while (mcStatus == MC_NORMAL_COMPLETION)
+    {
+        printf("  %-30s: %s\n", servInfo.ServiceName, GetSyntaxDescription(servInfo.SyntaxType));
+        mcStatus = MC_Get_Next_Acceptable_Service(associationID, &servInfo);
+    }
+
+    if (mcStatus != MC_END_OF_LIST)
+    {
+        PrintError("Warning: Unable to get service info", mcStatus);
+    }
+    printf("\n\n");
+}
+else
+    printf("Connected to remote system [%s]\n\n", options.RemoteAE);
+
+*/
+    fflush(stdout);
+    //totalImages = GetNumNodes(instanceList);
+   /*
+   if (obj.options.Verbose)
+   {
+       printf("Opening connection to remote system:\n");
+       printf("    AE title: %s\n", obj.options.RemoteAE);
+       if (obj.options.RemoteHostname[0])
+           printf("    Hostname: %s\n", obj.options.RemoteHostname);
+       else
+           printf("    Hostname: Default in mergecom.app\n");
+
+       if (obj.options.RemotePort != -1)
+           printf("        Port: %d\n", obj.options.RemotePort);
+       else
+           printf("        Port: Default in mergecom.app\n");
+
+       if (obj.options.ServiceList[0])
+           printf("Service List: %s\n", obj.options.ServiceList);
+       else
+           printf("Service List: Default in mergecom.app\n");
+
+       printf("   Files to Send: %d \n", obj.totalImages);
+   }
+
+   */
+   //startTime = GetIntervalStart();
+/*
+    mcStatus = MC_Open_Association(applicationID,
+        &associationID,
+        options.RemoteAE,
+        options.RemotePort != -1 ? &options.RemotePort : NULL,
+        options.RemoteHostname[0] ? options.RemoteHostname : NULL,
+        options.ServiceList[0] ? options.ServiceList : NULL);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        printf("Unable to open association with \"%s\":\n", options.RemoteAE);
+        printf("\t%s\n", MC_Error_Message(mcStatus));
+        fflush(stdout);
+        return(EXIT_FAILURE);
+    }
+
+    mcStatus = MC_Get_Association_Info(associationID, &options.asscInfo);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Get_Association_Info failed", mcStatus);
+    }
+*/
+/*
+if (options.Verbose)
+{
+    printf("Connecting to Remote Application:\n");
+    printf("  Remote AE Title:          %s\n", options.asscInfo.RemoteApplicationTitle);
+    printf("  Local AE Title:           %s\n", options.asscInfo.LocalApplicationTitle);
+    printf("  Host name:                %s\n", options.asscInfo.RemoteHostName);
+    printf("  IP Address:               %s\n", options.asscInfo.RemoteIPAddress);
+    printf("  Local Max PDU Size:       %lu\n", options.asscInfo.LocalMaximumPDUSize);
+    printf("  Remote Max PDU Size:      %lu\n", options.asscInfo.RemoteMaximumPDUSize);
+    printf("  Max operations invoked:   %u\n", options.asscInfo.MaxOperationsInvoked);
+    printf("  Max operations performed: %u\n", options.asscInfo.MaxOperationsPerformed);
+    printf("  Implementation Version:   %s\n", options.asscInfo.RemoteImplementationVersion);
+    printf("  Implementation Class UID: %s\n", options.asscInfo.RemoteImplementationClassUID);
+
+    /*
+     * Print out User Identity information if negotiated
+     *
+    printf("  User Identity type:       None\n\n\n");
+
+    printf("Services and transfer syntaxes negotiated:\n");
+
+    /*
+     * Go through all of the negotiated services.  If encapsulated /
+     * compressed transfer syntaxes are supported, this code should be
+     * expanded to save the services & transfer syntaxes that are
+     * negotiated so that they can be matched with the transfer
+     * syntaxes of the images being sent.
+     *
+    mcStatus = MC_Get_First_Acceptable_Service(associationID, &servInfo);
+    while (mcStatus == MC_NORMAL_COMPLETION)
+    {
+        printf("  %-30s: %s\n", servInfo.ServiceName, GetSyntaxDescription(servInfo.SyntaxType));
+        mcStatus = MC_Get_Next_Acceptable_Service(associationID, &servInfo);
+    }
+
+    if (mcStatus != MC_END_OF_LIST)
+    {
+        PrintError("Warning: Unable to get service info", mcStatus);
+    }
+    printf("\n\n");
+}
+else
+    printf("Connected to remote system [%s]\n\n", options.RemoteAE);
+
+*/
+    fflush(stdout);
+
+    /*
+     *   Send all requested images.  Traverse through instanceList to
+     *   get all files to send
+     */
+
+    obj.StartSendImage();
+    cout << 14 << endl;
+    /*
+    node = instanceList;
+    while (node)
+    {
+        //imageStartTime = GetIntervalStart();
+
+        /*
+        * Determine the image format and read the image in.  If the
+        * image is in the part 10 format, convert it into a message.
+        *
+        sampBool = ReadImage(&options, applicationID, node);
+        if (!sampBool)
+        {
+            node->imageSent = SAMP_FALSE;
+            printf("Can not open image file [%s]\n", node->fname);
+            node = node->Next;
+            continue;
+        }
+
+        totalBytesRead += node->imageBytes;
+
+        /*
+         * Send image read in with ReadImage.
+         *
+         * Because SendImage may not have actually sent an image even though it has returned success,
+         * the calculation of performance data below may not be correct.
+         *
+        sampBool = SendImage(&options, associationID, node);
+        if (!sampBool)
+        {
+            node->imageSent = SAMP_FALSE;
+            printf("Failure in sending file [%s]\n", node->fname);
+            MC_Abort_Association(&associationID);
+            MC_Release_Application(&applicationID);
+            break;
+        }
+
+        /*
+         * Save image transfer information in list
+         *
+        sampBool = UpdateNode(node);
+        if (!sampBool)
+        {
+            printf("Warning, unable to update node with information [%s]\n", node->fname);
+
+            MC_Abort_Association(&associationID);
+            MC_Release_Application(&applicationID);
+            break;
+        }
+        // }
+
+        if (node->imageSent == SAMP_TRUE)
+        {
+            imagesSent++;
+        }
+        else
+        {
+            node->responseReceived = SAMP_TRUE;
+            node->failedResponse = SAMP_TRUE;
+        }
+
+        mcStatus = MC_Free_Message(&node->msgID);
+        if (mcStatus != MC_NORMAL_COMPLETION)
+        {
+            PrintError("MC_Free_Message failed for request message", mcStatus);
+        }
+
+        // seconds = GetIntervalElapsed(imageStartTime);
+        //if (options.Verbose)
+          //  printf("     Time: %.3f seconds\n\n", (float)seconds);
+        //else
+          //  printf("\tSent %s image (%d of %d), elapsed time: %.3f seconds\n", node->serviceName, imagesSent, totalImages, seconds);
+
+        /*
+         * Traverse through file list
+         *
+        node = node->Next;
+
+    }   /* END for loop for each image *
+    */
+    obj.CloseAssociation();
+    cout << 15 << endl;
+    /*
+     * A failure on close has no real recovery.  Abort the association
+     * and continue on.
+     */
+     /*
+     mcStatus = MC_Close_Association(&associationID);
+     if (mcStatus != MC_NORMAL_COMPLETION)
+     {
+         PrintError("Close association failed", mcStatus);
+         MC_Abort_Association(&associationID);
+     }
+
+     /*
+      * Calculate the transfer rate.  Note, for a real performance
+      * numbers, a function other than time() to measure elapsed
+      * time should be used.
+      *
+     if (options.Verbose)
+     {
+         printf("Association Closed.\n");
+     }
+
+     // seconds = GetIntervalElapsed(startTime);
+
+     printf("Data Transferred: %luMB\n", (unsigned long)(totalBytesRead / (1024 * 1024)));
+     //printf("    Time Elapsed: %.3fs\n", seconds);
+     //printf("   Transfer Rate: %.1fKB/s\n", ((float)totalBytesRead / seconds) / 1024.0);
+     fflush(stdout);
+
+     /*
+      * Release the dICOM Application
+      *
+     mcStatus = MC_Release_Application(&applicationID);
+     if (mcStatus != MC_NORMAL_COMPLETION)
+     {
+         PrintError("MC_Release_Application failed", mcStatus);
+     }
+
+     /*
+      * Free the node list's allocated memory
+      *
+     FreeList(&instanceList);
+
+     /*
+      * Release all memory used by the Merge DICOM Toolkit.
+      *
+     if (MC_Library_Release() != MC_NORMAL_COMPLETION)
+         printf("Error releasing the library.\n");
+     */
 
     fflush(stdout);
 
     return(EXIT_SUCCESS);
+
 }
 
 /********************************************************************
@@ -576,7 +1143,7 @@ static void PrintCmdLine(void)
  *************************************************************************/
 static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
-    if (PrintHelp(A_argc,A_argv) == SAMP_FALSE)
+    if (PrintHelp(A_argc, A_argv) == SAMP_FALSE)
     {
         return SAMP_FALSE;
     }
@@ -607,7 +1174,7 @@ static SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_o
     /*
      * Loop through each argument
      */
-    OptionHandling(A_argc,A_argv,A_options);
+    OptionHandling(A_argc, A_argv, A_options);
     RemoteManagement(A_options);
     if (A_options->StopImage < A_options->StartImage)
     {
@@ -649,14 +1216,14 @@ static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[])
     {
         string str(A_argv[i]);
         transform(str.begin(), str.end(), str.begin(), ::tolower);
-        if (CheckIfHelp(str,A_argc)==true)
+        if (CheckIfHelp(str, A_argc) == true)
         {
             PrintCmdLine();
             return SAMP_FALSE;
         }
     }
     return SAMP_TRUE;
-} 
+}
 static bool CheckIfHelp(string str, int A_argc)
 {
     if ((str == "-h") || (A_argc < 3))
@@ -669,7 +1236,7 @@ static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_option
 {
     for (int i = 1; i < A_argc; i++)
     {
-        if (CheckOptions(i, A_argv, A_options)==false)
+        if (CheckOptions(i, A_argv, A_options) == false)
         {
             printf("Unkown option: %s\n", A_argv[i]);
         }
@@ -677,7 +1244,7 @@ static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_option
 }
 static bool CheckOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
-    if (MapOptions(i, A_argv, A_options) == false && ExtraOptions(i,A_argv,A_options) == false)
+    if (MapOptions(i, A_argv, A_options) == false && ExtraOptions(i, A_argv, A_options) == false)
     {
         return false;
     }
@@ -718,7 +1285,7 @@ static void StopImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
     A_options->StopImage = atoi(A_argv[i]);
 }
 
-static bool MapOptions(int i, char* A_argv[],STORAGE_OPTIONS* A_options)
+static bool MapOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
 {
     bool f = false;
     typedef void (*Fnptr1)(int, char* [], STORAGE_OPTIONS*);
@@ -786,9 +1353,9 @@ static void Verbose(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
          * Parse through the rest of the options
          *
 
-         
+
         }
-        
+
 */
 
 /****************************************************************************
@@ -809,7 +1376,7 @@ static void Verbose(int i, char* A_argv[], STORAGE_OPTIONS* A_options)
 static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
 {
     InstanceNode* newNode;
-    
+
     newNode = (InstanceNode*)malloc(sizeof(InstanceNode));
     if (!newNode)
     {
@@ -827,8 +1394,8 @@ static SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
     newNode->imageSent = SAMP_FALSE;
     newNode->msgID = -1;
     newNode->transferSyntax = IMPLICIT_LITTLE_ENDIAN;
-    list_updation(A_list,newNode);
-    
+    list_updation(A_list, newNode);
+
     return (SAMP_TRUE);
 }
 static void list_updation(InstanceNode** A_list, InstanceNode* newNode)
@@ -975,7 +1542,7 @@ static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceN
 {
     FORMAT_ENUM             format = UNKNOWN_FORMAT;
     SAMP_BOOLEAN            sampBool = SAMP_FALSE;
-    
+
 
     format = CheckFileFormat(A_node->fname);
     if (format == MEDIA_FORMAT)
@@ -995,20 +1562,20 @@ static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceN
     fflush(stdout);
     return sampBool;
 }
-static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool,InstanceNode* A_node)
+static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node)
 {
     MC_STATUS               mcStatus;
     mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_CLASS_UID, sizeof(A_node->SOPClassUID), A_node->SOPClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
-      {
-            PrintError("MC_Get_Value_To_String for SOP Class UID failed", mcStatus);
-      }
+    {
+        PrintError("MC_Get_Value_To_String for SOP Class UID failed", mcStatus);
+    }
 
     mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_INSTANCE_UID, sizeof(A_node->SOPInstanceUID), A_node->SOPInstanceUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
-      {
-            PrintError("MC_Get_Value_To_String for SOP Instance UID failed", mcStatus);
-      }
+    {
+        PrintError("MC_Get_Value_To_String for SOP Instance UID failed", mcStatus);
+    }
     return sampBool;
 }
 /****************************************************************************
@@ -1116,7 +1683,7 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
     {
         return SAMP_TRUE;
     }
-   
+
     /*
      *  Send the message
      */
@@ -1559,7 +2126,7 @@ static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
 
     if (SetBuffer(A_filename, callbackInfo, retStatus, A_isFirst, A_userInfo) == false)
         return MC_CANNOT_COMPLY;
-    
+
     if (ReadInCallBackFile(callbackInfo, bytes_read, A_isLast) == false)
         return MC_CANNOT_COMPLY;
 

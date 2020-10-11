@@ -182,6 +182,13 @@ static SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceN
 static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node);
 static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node);
 static MC_STATUS NOEXP_FUNC MediaToFileObj(char* Afilename, void* AuserInfo, int* AdataSize, void** AdataBuffer, int AisFirst, int* AisLast);
+static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
+static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
+static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID);
+static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
+static bool Message_Handling(int*& A_msgID);
+static bool ReadFile1(int A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead);
+static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
 
 static void PrintError(const char* A_string, MC_STATUS A_status);
 
@@ -301,14 +308,15 @@ public:
 
     bool InitializeApplication();
     bool InitializeList();
-    bool CheckFileStatus();
     void ReadFileByFILENAME();
+    void ReadEachLineInFile();
     void ReadFileFromStartStopPosition();
 
     bool CreateAssociation();
     MC_STATUS OpenAssociation();
-
+    
     void StartSendImage();
+    bool ImageTransfer();
     bool SendImageAndUpdateNode();
     void UpdateImageSentCount();
 
@@ -316,6 +324,7 @@ public:
     void ReleaseApplication();
 
     void VerboseBeforeConnection();
+    void RemoteVerbose();
     void VerboseAfterConnection();
     void VerboseTransferSyntax();
 
@@ -373,35 +382,26 @@ bool mainclass::InitializeList()
     return mainclass::CreateAssociation();
 
 }
-bool mainclass::CheckFileStatus()
-{
-    fstatus = fscanf(fp, "%s", fname);
-
-    if (fstatus == EOF || fstatus == 0)
-    {
-        fclose(fp);
-        return false;
-    }
-
-    if (fname[0] == '#') /* skip commented out rows */
-        return true;
-
-}
 
 void mainclass::ReadFileByFILENAME()
 {
-    for (;;) /* forever loop until break */
+    fstatus = fscanf(fp, "%s", fname);
+    while (fstatus!= EOF && fstatus!=0)
     {
-        if (CheckFileStatus() == false)
-            break;
-        else
-            continue;
-
-        sampBool = AddFileToList(&instanceList, fname);
-        if (!sampBool)
-        {
-            printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
-        }
+        ReadEachLineInFile();
+    }
+    fclose(fp);
+}
+void mainclass::ReadEachLineInFile()
+{
+    if (fname[0] == '#') /* skip commented out rows */
+    {
+        return;
+    }
+    sampBool = AddFileToList(&instanceList, fname);
+    if (!sampBool)
+    {
+        printf("Warning, cannot add SOP instance to File List, image will not be sent [%s]\n", fname);
     }
 }
 void mainclass::ReadFileFromStartStopPosition()
@@ -418,7 +418,6 @@ void mainclass::ReadFileFromStartStopPosition()
 }
 MC_STATUS mainclass::OpenAssociation()
 {
-
     return MC_Open_Association(applicationID,
         &associationID,
         options.RemoteAE,
@@ -445,30 +444,30 @@ bool mainclass::CreateAssociation()
     mainclass::VerboseAfterConnection();
     return true;
 }
+void mainclass::RemoteVerbose()
+{
+    if (options.RemoteHostname[0])
+        printf("    Hostname: %s\n", options.RemoteHostname);
+    else
+        printf("    Hostname: Default in mergecom.app\n");
 
+    if (options.RemotePort != -1)
+        printf("        Port: %d\n", options.RemotePort);
+    else
+        printf("        Port: Default in mergecom.app\n");
+}
 void mainclass::VerboseBeforeConnection()
 {
-    if (options.Verbose)
-    {
         printf("Opening connection to remote system:\n");
         printf("    AE title: %s\n", options.RemoteAE);
-        if (options.RemoteHostname[0])
-            printf("    Hostname: %s\n", options.RemoteHostname);
-        else
-            printf("    Hostname: Default in mergecom.app\n");
-
-        if (options.RemotePort != -1)
-            printf("        Port: %d\n", options.RemotePort);
-        else
-            printf("        Port: Default in mergecom.app\n");
-
+        RemoteVerbose();
         if (options.ServiceList[0])
             printf("Service List: %s\n", options.ServiceList);
         else
             printf("Service List: Default in mergecom.app\n");
 
         printf("   Files to Send: %d \n", totalImages);
-    }
+    
 }
 
 void mainclass::VerboseAfterConnection()
@@ -570,6 +569,41 @@ bool mainclass::SendImageAndUpdateNode()
     return true;
 
 }
+bool mainclass::ImageTransfer()
+{
+    /*
+        * Determine the image format and read the image in.  If the
+        * image is in the part 10 format, convert it into a message.
+        */
+    sampBool = ReadImage(&options, applicationID, node);
+    if (!sampBool)
+    {
+        node->imageSent = SAMP_FALSE;
+        printf("Can not open image file [%s]\n", node->fname);
+        node = node->Next;
+        return true;
+    }
+
+    totalBytesRead += node->imageBytes;
+
+    /*
+     * Send image read in with ReadImage.
+     *
+     * Because SendImage may not have actually sent an image even though it has returned success,
+     * the calculation of performance data below may not be correct.
+     */
+
+
+     /*
+      * Save image transfer information in list
+      */
+    if (SendImageAndUpdateNode() == false)
+        return false;
+    /*
+         * Traverse through file list
+         */
+    node = node->Next;
+}
 void mainclass::StartSendImage()
 {
     node = instanceList;
@@ -577,41 +611,12 @@ void mainclass::StartSendImage()
     {
         //imageStartTime = GetIntervalStart();
 
-        /*
-        * Determine the image format and read the image in.  If the
-        * image is in the part 10 format, convert it into a message.
-        */
-        sampBool = ReadImage(&options, applicationID, node);
-        if (!sampBool)
+        if (ImageTransfer() == false)
         {
-            node->imageSent = SAMP_FALSE;
-            printf("Can not open image file [%s]\n", node->fname);
-            node = node->Next;
-            continue;
+            break;
         }
 
-        totalBytesRead += node->imageBytes;
-
-        /*
-         * Send image read in with ReadImage.
-         *
-         * Because SendImage may not have actually sent an image even though it has returned success,
-         * the calculation of performance data below may not be correct.
-         */
-
-
-         /*
-          * Save image transfer information in list
-          */
-        if (SendImageAndUpdateNode() == false)
-            break;
-
-
-        /*
-         * Traverse through file list
-         */
-        node = node->Next;
-
+        
     }   /* END for loop for each image */
 
 }
@@ -1407,19 +1412,12 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
     /*
      *  Send the message
      */
-    if (A_options->Verbose)
-    {
-        printf("     File: %s\n", A_node->fname);
-
-        if (A_node->mediaFormat)
-            printf("   Format: DICOM Part 10 Format(%s)\n", GetSyntaxDescription(A_node->transferSyntax));
-        else
-            printf("   Format: Stream Format(%s)\n", GetSyntaxDescription(A_node->transferSyntax));
-
-        printf("SOP Class: %s (%s)\n", A_node->SOPClassUID, A_node->serviceName);
-        printf("      UID: %s\n", A_node->SOPInstanceUID);
-        printf("     Size: %lu bytes\n", (unsigned long)A_node->imageBytes);
-    }
+    printf("     File: %s\n", A_node->fname);
+    printf("   Format: DICOM Part 10 Format(%s)\n", GetSyntaxDescription(A_node->transferSyntax));
+    printf("SOP Class: %s (%s)\n", A_node->SOPClassUID, A_node->serviceName);
+    printf("      UID: %s\n", A_node->SOPInstanceUID);
+    printf("     Size: %lu bytes\n", (unsigned long)A_node->imageBytes);
+    
 
     mcStatus = MC_Send_Request_Message(A_associationID, A_node->msgID);
 
@@ -1548,62 +1546,31 @@ MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filena
         return(mcStatusTemp);
     }
 }
-static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
-    int               A_appID,
-    char* A_filename,
-    int* A_msgID,
-    TRANSFER_SYNTAX* A_syntax,
-    size_t* A_bytesRead)
+static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
 {
-    CBinfo      callbackInfo = { 0 };
-    MC_STATUS   mcStatus;
-    char        transferSyntaxUID[UI_LENGTH + 2] = { 0 }, sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
-
-    if (A_options->Verbose)
-    {
-        printf("Reading %s in DICOM Part 10 format\n", A_filename);
-    }
-
     /*
-     * Create new File object
-     */
-
-
-     /*
-      * Read the file off of disk
-     */
-    mcStatus = CreateEmptyFileAndStoreIt(A_appID, A_msgID, A_filename, callbackInfo);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        return(SAMP_FALSE);
-    }
-
-    CloseCallBackInfo(callbackInfo);
-
-    *A_bytesRead = callbackInfo.bytesRead;
-
-    /*
-     * Get the transfer syntax UID from the file to determine if the object
-     * is encoded in a compressed transfer syntax.  IE, one of the JPEG or
-     * the RLE transfer syntaxes.  If we've specified on the command line
-     * that we are supporting encapsulated/compressed transfer syntaxes,
-     * go ahead an use the object, if not, reject it and return failure.
-     *
-     * Note that if encapsulated transfer syntaxes are supported, the
-     * services lists in the mergecom.app file must be expanded using
-     * transfer syntax lists to contain the JPEG syntaxes supported.
-     * Also, the transfer syntaxes negotiated for each service should be
-     * saved (as retrieved by the MC_Get_First/Next_Acceptable service
-     * calls) to match with the actual syntax of the object.  If they do
-     * not match the encoding of the pixel data may have to be modified
-     * before the file is sent over the wire.
-     */
+         * Get the transfer syntax UID from the file to determine if the object
+         * is encoded in a compressed transfer syntax.  IE, one of the JPEG or
+         * the RLE transfer syntaxes.  If we've specified on the command line
+         * that we are supporting encapsulated/compressed transfer syntaxes,
+         * go ahead an use the object, if not, reject it and return failure.
+         *
+         * Note that if encapsulated transfer syntaxes are supported, the
+         * services lists in the mergecom.app file must be expanded using
+         * transfer syntax lists to contain the JPEG syntaxes supported.
+         * Also, the transfer syntaxes negotiated for each service should be
+         * saved (as retrieved by the MC_Get_First/Next_Acceptable service
+         * calls) to match with the actual syntax of the object.  If they do
+         * not match the encoding of the pixel data may have to be modified
+         * before the file is sent over the wire.
+         */
+    char        transferSyntaxUID[UI_LENGTH + 2] = { 0 };
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_TRANSFER_SYNTAX_UID, sizeof(transferSyntaxUID), transferSyntaxUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
         PrintError("MC_Get_Value_To_String failed for transfer syntax UID", mcStatus);
         MC_Free_File(A_msgID);
-        return SAMP_FALSE;
+        return false;
     }
 
     mcStatus = MC_Get_Enum_From_Transfer_Syntax(transferSyntaxUID, A_syntax);
@@ -1611,26 +1578,15 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     {
         printf("Invalid transfer syntax UID contained in the file: %s\n", transferSyntaxUID);
         MC_Free_File(A_msgID);
-        return SAMP_FALSE;
+        return false;
     }
-
-    /*
-     * If we don't handle encapsulated transfer syntaxes, let's check the
-     * image transfer syntax to be sure it is not encoded as an encapsulated
-     * transfer syntax.
-     */
-
-    if (!CheckTransferSyntax(*A_syntax))
-    {
-        printf("Warning: Invalid transfer syntax (%s) specified\n", GetSyntaxDescription(*A_syntax));
-        printf("         Not sending image.\n");
-        MC_Free_File(A_msgID);
-        fflush(stdout);
-        return SAMP_FALSE;
-    }
-
-    if (A_options->Verbose)
-        printf("Reading DICOM Part 10 format file in %s: %s\n", GetSyntaxDescription(*A_syntax), A_filename);
+    return true;
+}
+static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
+{
+    char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
+    MC_STATUS mcStatus;
+    printf("Reading DICOM Part 10 format file in %s: %s\n", GetSyntaxDescription(*A_syntax), A_filename);
 
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_CLASS_UID, sizeof(sopClassUID), sopClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
@@ -1638,32 +1594,21 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
         printf("Get MC_ATT_AFFECTED_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
-        return SAMP_FALSE;
+        return false;
     }
-
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_INSTANCE_UID, sizeof(sopInstanceUID), sopInstanceUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
         printf("Get MC_ATT_MEDIA_STORAGE_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
-        return SAMP_FALSE;
+        return false;
     }
-
-    /*
-     * Convert the "file" object into a "message" object.  This is done
-     * because the MC_Send_Request_Message call requires that the object
-     * be a "message" object.  Any of the tags in the message can be
-     * accessed when the object is a "file" object.
-     */
-    mcStatus = MC_File_To_Message(*A_msgID);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("Unable to convert file object to message object", mcStatus);
-        MC_Free_File(A_msgID);
-        fflush(stdout);
-        return(SAMP_FALSE);
-    }
+    return true;
+}
+static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID)
+{
+    char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
 
     /* form message with valid group 0 and transfer syntax */
     mcStatus = MC_Set_Value_From_String(*A_msgID, MC_ATT_AFFECTED_SOP_CLASS_UID, sopClassUID);
@@ -1672,7 +1617,7 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
         printf("Set MC_ATT_AFFECTED_SOP_CLASS_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
-        return SAMP_FALSE;
+        return false;
     }
 
     mcStatus = MC_Set_Value_From_String(*A_msgID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, sopInstanceUID);
@@ -1681,8 +1626,114 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
         printf("Set MC_ATT_AFFECTED_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
+        return false;
+    }
+    return true;
+}
+static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
+{
+    if (Transfer_Syntax_Encoding(mcStatus, A_msgID, A_syntax) == false)
+    {
+        return false;
+    }
+    /*
+         * If we don't handle encapsulated transfer syntaxes, let's check the
+         * image transfer syntax to be sure it is not encoded as an encapsulated
+         * transfer syntax.
+         */
+
+    if (!CheckTransferSyntax(*A_syntax))
+    {
+        printf("Warning: Invalid transfer syntax (%s) specified\n", GetSyntaxDescription(*A_syntax));
+        printf("         Not sending image.\n");
+        MC_Free_File(A_msgID);
+        fflush(stdout);
+        return false;
+    }
+    return true;
+}
+static bool Message_Handling(int*& A_msgID)
+{
+    MC_STATUS mcStatus;
+    /*
+         * Convert the "file" object into a "message" object.  This is done
+         * because the MC_Send_Request_Message call requires that the object
+         * be a "message" object.  Any of the tags in the message can be
+         * accessed when the object is a "file" object.
+         */
+    mcStatus = MC_File_To_Message(*A_msgID);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("Unable to convert file object to message object", mcStatus);
+        MC_Free_File(A_msgID);
+        fflush(stdout);
+        return false;
+    }
+    if (Message_Creation(mcStatus, A_msgID) == false)
+    {
+        return false;
+    }
+    return true;
+}
+static bool ReadFile1(int A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead)
+{
+    CBinfo      callbackInfo = { 0 };
+    MC_STATUS mcStatus;
+    mcStatus = CreateEmptyFileAndStoreIt(A_appID, A_msgID, A_filename, callbackInfo);
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        return false;
+    }
+
+    CloseCallBackInfo(callbackInfo);
+
+    *A_bytesRead = callbackInfo.bytesRead;
+
+    if (Syntax_Handling(mcStatus, A_msgID, A_syntax) == false)
+    {
+        return false;
+    }
+    return true;
+}
+static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
+{
+    if (Image_Extraction(A_msgID, A_syntax, A_filename) == false)
+    {
+        return false;
+    }
+
+    if (Message_Handling(A_msgID) == false)
+    {
+        return false;
+    }
+    return true;
+}
+
+static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
+    int               A_appID,
+    char* A_filename,
+    int* A_msgID,
+    TRANSFER_SYNTAX* A_syntax,
+    size_t* A_bytesRead)
+{
+
+    
+
+    /*
+     * Create new File object
+     */
+    if (ReadFile1(A_appID, A_filename, A_msgID, A_syntax, A_bytesRead) == false)
+    {
         return SAMP_FALSE;
     }
+    /*
+     * Read the file off of disk
+    */
+    if (ReadFile2(A_msgID, A_syntax, A_filename) == false)
+    {
+        return SAMP_FALSE;
+    }
+
 
     /*
      *  SCU service should set Transfer Syntax of DICOM send message explicitly to guarantee that SCP service would get

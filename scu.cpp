@@ -183,11 +183,11 @@ static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node)
 static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node);
 static MC_STATUS NOEXP_FUNC MediaToFileObj(char* Afilename, void* AuserInfo, int* AdataSize, void** AdataBuffer, int AisFirst, int* AisLast);
 static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
-static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
-static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID);
+static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
+static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
 static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
-static bool Message_Handling(int*& A_msgID);
-static bool ReadFile1(int A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead);
+static bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
+static bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead);
 static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
 
 static void PrintError(const char* A_string, MC_STATUS A_status);
@@ -314,7 +314,7 @@ public:
 
     bool CreateAssociation();
     MC_STATUS OpenAssociation();
-    
+
     void StartSendImage();
     bool ImageTransfer();
     bool SendImageAndUpdateNode();
@@ -386,7 +386,7 @@ bool mainclass::InitializeList()
 void mainclass::ReadFileByFILENAME()
 {
     fstatus = fscanf(fp, "%s", fname);
-    while (fstatus!= EOF && fstatus!=0)
+    while (fstatus != EOF && fstatus != 0)
     {
         ReadEachLineInFile();
     }
@@ -458,16 +458,16 @@ void mainclass::RemoteVerbose()
 }
 void mainclass::VerboseBeforeConnection()
 {
-        printf("Opening connection to remote system:\n");
-        printf("    AE title: %s\n", options.RemoteAE);
-        RemoteVerbose();
-        if (options.ServiceList[0])
-            printf("Service List: %s\n", options.ServiceList);
-        else
-            printf("Service List: Default in mergecom.app\n");
+    printf("Opening connection to remote system:\n");
+    printf("    AE title: %s\n", options.RemoteAE);
+    RemoteVerbose();
+    if (options.ServiceList[0])
+        printf("Service List: %s\n", options.ServiceList);
+    else
+        printf("Service List: Default in mergecom.app\n");
 
-        printf("   Files to Send: %d \n", totalImages);
-    
+    printf("   Files to Send: %d \n", totalImages);
+
 }
 
 void mainclass::VerboseAfterConnection()
@@ -616,7 +616,7 @@ void mainclass::StartSendImage()
             break;
         }
 
-        
+
     }   /* END for loop for each image */
 
 }
@@ -1368,7 +1368,7 @@ bool GetSOPUIDAndSetService(InstanceNode* A_node)
 
 }
 
-bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode* A_node)
+bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode*& A_node)
 {
     std::map<MC_STATUS, string> SendRequestMap;
 
@@ -1378,8 +1378,8 @@ bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode* A_node)
 
 
     if (SendRequestMap.find(mcStatus) != SendRequestMap.end()) {
-        CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");
-        return true;
+        //CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");
+        return CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");;
     }
     else if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -1417,7 +1417,7 @@ static SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, I
     printf("SOP Class: %s (%s)\n", A_node->SOPClassUID, A_node->serviceName);
     printf("      UID: %s\n", A_node->SOPInstanceUID);
     printf("     Size: %lu bytes\n", (unsigned long)A_node->imageBytes);
-    
+
 
     mcStatus = MC_Send_Request_Message(A_associationID, A_node->msgID);
 
@@ -1517,10 +1517,8 @@ void CloseCallBackInfo(CBinfo& callbackInfo)
     ////Associated with ReadFileFromMedia
     if (callbackInfo.fp)
         fclose(callbackInfo.fp);
-
     if (callbackInfo.buffer)
         free(callbackInfo.buffer);
-
     return;
 }
 
@@ -1532,10 +1530,12 @@ MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filena
 
     if (mcStatusTemp != MC_NORMAL_COMPLETION)
     {
+
         PrintError("Unable to create file object", mcStatusTemp);
         fflush(stdout);
         return(mcStatusTemp);
     }
+
     mcStatusTemp = MC_Open_File(A_appID, *A_msgID, &callbackInfo, MediaToFileObj);
     if (mcStatusTemp != MC_NORMAL_COMPLETION)
     {
@@ -1568,6 +1568,7 @@ static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_TRANSFER_SYNTAX_UID, sizeof(transferSyntaxUID), transferSyntaxUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
+
         PrintError("MC_Get_Value_To_String failed for transfer syntax UID", mcStatus);
         MC_Free_File(A_msgID);
         return false;
@@ -1576,27 +1577,30 @@ static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER
     mcStatus = MC_Get_Enum_From_Transfer_Syntax(transferSyntaxUID, A_syntax);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
+
         printf("Invalid transfer syntax UID contained in the file: %s\n", transferSyntaxUID);
         MC_Free_File(A_msgID);
         return false;
     }
+
     return true;
 }
-static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
+static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
 {
-    char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
+    //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     MC_STATUS mcStatus;
     printf("Reading DICOM Part 10 format file in %s: %s\n", GetSyntaxDescription(*A_syntax), A_filename);
-
-    mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_CLASS_UID, sizeof(sopClassUID), sopClassUID);
+    mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_CLASS_UID, size_sopClassUID, sopClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
+
         printf("Get MC_ATT_AFFECTED_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
         return false;
     }
-    mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_INSTANCE_UID, sizeof(sopInstanceUID), sopInstanceUID);
+
+    mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_INSTANCE_UID, size_sopInstanceUID, sopInstanceUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
         printf("Get MC_ATT_MEDIA_STORAGE_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
@@ -1606,10 +1610,9 @@ static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A
     }
     return true;
 }
-static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID)
+static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID)
 {
-    char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
-
+    //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     /* form message with valid group 0 and transfer syntax */
     mcStatus = MC_Set_Value_From_String(*A_msgID, MC_ATT_AFFECTED_SOP_CLASS_UID, sopClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
@@ -1652,7 +1655,7 @@ static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*&
     }
     return true;
 }
-static bool Message_Handling(int*& A_msgID)
+static bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
 {
     MC_STATUS mcStatus;
     /*
@@ -1669,13 +1672,16 @@ static bool Message_Handling(int*& A_msgID)
         fflush(stdout);
         return false;
     }
-    if (Message_Creation(mcStatus, A_msgID) == false)
+
+    if (Message_Creation(mcStatus, A_msgID, sopClassUID, sopInstanceUID) == false)
     {
+
         return false;
     }
+
     return true;
 }
-static bool ReadFile1(int A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead)
+static bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead)
 {
     CBinfo      callbackInfo = { 0 };
     MC_STATUS mcStatus;
@@ -1697,12 +1703,15 @@ static bool ReadFile1(int A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SY
 }
 static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
 {
-    if (Image_Extraction(A_msgID, A_syntax, A_filename) == false)
+    char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
+    size_t size_sopClassUID = sizeof(sopClassUID);
+    size_t size_sopInstanceUID = sizeof(sopInstanceUID);
+    if (Image_Extraction(A_msgID, A_syntax, A_filename, sopClassUID, sopInstanceUID, size_sopClassUID, size_sopInstanceUID) == false)
     {
         return false;
     }
 
-    if (Message_Handling(A_msgID) == false)
+    if (Message_Handling(A_msgID, sopClassUID, sopInstanceUID, size_sopClassUID, size_sopInstanceUID) == false)
     {
         return false;
     }
@@ -1717,7 +1726,7 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     size_t* A_bytesRead)
 {
 
-    
+
 
     /*
      * Create new File object

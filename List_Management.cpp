@@ -20,6 +20,13 @@ SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
 {
     InstanceNode* newNode;
 
+    ifstream fin(A_fname);
+    if (fin.fail())
+    {
+        cout << "Warning: Cannot find file: " << A_fname << endl;
+        return(SAMP_FALSE);
+    }
+
     newNode = (InstanceNode*)malloc(sizeof(InstanceNode));
     if (!newNode)
     {

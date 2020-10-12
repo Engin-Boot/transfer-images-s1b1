@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <time.h>
 #include <map>
+#include <fstream>
 
 using namespace std;
 
@@ -194,3 +195,61 @@ static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int* A_msgID,
     TRANSFER_SYNTAX* A_syntax,
     size_t* A_bytesRead);
+
+
+class mainclass
+{
+public:
+    SAMP_BOOLEAN            sampBool;
+    STORAGE_OPTIONS         options;
+    MC_STATUS               mcStatus;
+    int                     applicationID, associationID, imageCurrent;
+    int                     imagesSent, totalImages, fstatus;
+    char* fname; /* Extra long, just in case */
+    ServiceInfo             servInfo;
+    size_t                  totalBytesRead;
+    InstanceNode* instanceList, * node;
+    FILE* fp = NULL;
+
+
+    mainclass(char* filename)
+    {
+
+        applicationID = -1;
+        associationID = -1;
+        imageCurrent = 0;
+        imagesSent = 0L;
+        totalImages = 0L;
+        fstatus = 0;
+        fname = filename; /* Extra long, just in case */
+        totalBytesRead = 0L;
+        instanceList = NULL;
+        node = NULL;
+        fp = NULL;
+    }
+
+    bool InitializeApplication();
+    bool InitializeList();
+    void ReadFileByFILENAME();
+    void ReadEachLineInFile();
+    void ReadFileFromStartStopPosition();
+
+    bool CreateAssociation();
+    char* checkRemoteHostName(char* RemoteHostName);
+    char* checkServiceList(char* ServiceList);
+    MC_STATUS OpenAssociation();
+
+    void StartSendImage();
+    bool ImageTransfer();
+    bool SendImageAndUpdateNode();
+    void UpdateImageSentCount();
+
+    void CloseAssociation();
+    void ReleaseApplication();
+
+    void VerboseBeforeConnection();
+    void RemoteVerbose();
+    void VerboseAfterConnection();
+    void VerboseTransferSyntax();
+
+};

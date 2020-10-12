@@ -1,3 +1,5 @@
+#include "Definitions.h"
+
 bool mainclass::InitializeApplication()
 {
 

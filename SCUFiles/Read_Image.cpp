@@ -343,7 +343,7 @@ bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
         return false;
     }
 
-    if (Message_Handling(A_msgID, sopClassUID, sopInstanceUID, size_sopClassUID, size_sopInstanceUID) == false)
+    if (Message_Handling(A_msgID, sopClassUID, sopInstanceUID) == false)
     {
         return false;
     }

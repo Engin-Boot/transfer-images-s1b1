@@ -48,7 +48,7 @@ SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname)
 
     return (SAMP_TRUE);
 }
-static void list_updation(InstanceNode** A_list, InstanceNode* newNode)
+void list_updation(InstanceNode** A_list, InstanceNode* newNode)
 {
     InstanceNode* listNode;
     if (!*A_list)

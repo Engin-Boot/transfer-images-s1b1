@@ -20,7 +20,7 @@
   //typedef std::map<SAMP_BOOLEAN, FileInputTypeFunction>MapToFileInputType;
   
 
-int main(int argc, char** argv)
+int main(int argc, const char* argv[])
 {
     SAMP_BOOLEAN            sampBool;
     /*STORAGE_OPTIONS         opt;
@@ -190,30 +190,3 @@ int main(int argc, char** argv)
 
 */
 
-/****************************************************************************
- *
- *  Function    :   PrintError
- *
- *  Description :   Display a text string on one line and the error message
- *                  for a given error on the next line.
- *
- ****************************************************************************/
-void PrintError(const char* A_string, MC_STATUS A_status)
-{
-    char        prefix[30] = { 0 };
-    /*
-     *  Need process ID number for messages
-     */
-#ifdef UNIX
-    sprintf(prefix, "PID %d", getpid());
-#endif
-    if (A_status == -1)
-    {
-        printf("%s\t%s\n", prefix, A_string);
-    }
-    else
-    {
-        printf("%s\t%s:\n", prefix, A_string);
-        printf("%s\t\t%s\n", prefix, MC_Error_Message(A_status));
-    }
-}

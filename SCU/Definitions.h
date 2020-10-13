@@ -20,13 +20,10 @@ using namespace std;
  * Merge DICOM Toolkit Includes
  */
 #include "../mc3inc/mc3media.h"
- //#include "mc3msg.h"
 #include "../mc3inc/mergecom.h"
 #include "../mc3inc/diction.h"
-//#include "mc3services.h"
-//#include "mc3items.h"
 
-#include "general_util.h"
+#include "../mc3inc/general_util.h"
 
    /*
     * Module constants
@@ -147,49 +144,50 @@ typedef struct instance_node
     struct instance_node* Next;         /* Pointer to next node in list */
 
 } InstanceNode;
-int main(int argc, char** argv);
+int main(int argc, const char* argv[]);
 
-SAMP_BOOLEAN TestCmdLine(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void RemoteManagement(STORAGE_OPTIONS* A_options);
-static bool CheckHostandPort(STORAGE_OPTIONS* A_options);
-static SAMP_BOOLEAN PrintHelp(int A_argc, char* A_argv[]);
-static bool CheckIfHelp(string str, int A_argc);
-static void OptionHandling(int A_argc, char* A_argv[], STORAGE_OPTIONS* A_options);
-static bool CheckOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static bool ExtraOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void RemoteAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void StartImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void StopImage(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static bool MapOptions(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void LocalAE(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void LocalPort(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void Filename(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void ServiceList(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void RemoteHost(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void RemotePort(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void Verbose(int i, char* A_argv[], STORAGE_OPTIONS* A_options);
-static void PrintCmdLine(void);
+SAMP_BOOLEAN TestCmdLine(int A_argc, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void RemoteManagement(STORAGE_OPTIONS* A_options);
+bool CheckHostandPort(STORAGE_OPTIONS* A_options);
+SAMP_BOOLEAN PrintHelp(int A_argc, const char* A_argv[]);
+bool CheckIfHelp(string str, int A_argc);
+void OptionHandling(int A_argc, const char* A_argv[], STORAGE_OPTIONS* A_options);
+bool CheckOptions(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+bool ExtraOptions(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void RemoteAE(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void StartImage(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void StopImage(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+bool MapOptions(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void LocalAE(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void LocalPort(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void Filename(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void ServiceList(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void RemoteHost(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void RemotePort(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void Verbose(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
+void PrintCmdLine(void);
 SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname);
-static void list_updation(InstanceNode** A_list, InstanceNode* newNode);
+void list_updation(InstanceNode** A_list, InstanceNode* newNode);
 SAMP_BOOLEAN UpdateNode(InstanceNode* A_node);
 void FreeList(InstanceNode** A_list);
 int GetNumNodes(InstanceNode* A_list);
-static FORMAT_ENUM CheckFileFormat(char* A_filename);
+FORMAT_ENUM CheckFileFormat(char* A_filename);
 SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceNode* A_node);
-static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node);
+void ValidImageCheck(InstanceNode* A_node);
+MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filename, CBinfo& callbackInfo);
 SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, InstanceNode* A_node);
-static MC_STATUS NOEXP_FUNC MediaToFileObj(char* Afilename, void* AuserInfo, int* AdataSize, void** AdataBuffer, int AisFirst, int* AisLast);
-static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
-static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
-static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
-static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
-static bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
-static bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead);
-static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
+MC_STATUS NOEXP_FUNC MediaToFileObj(char* Afilename, void* AuserInfo, int* AdataSize, void** AdataBuffer, int AisFirst, int* AisLast);
+bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
+bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
+bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
+bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax);
+bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID);
+bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead);
+bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
 
 void PrintError(const char* A_string, MC_STATUS A_status);
 
-static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
+SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int A_appID,
     char* A_filename,
     int* A_msgID,

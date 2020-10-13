@@ -40,12 +40,12 @@ SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceNode* A_
     }
     if (sampBool == SAMP_TRUE)
     {
-        sampBool = ValidImageCheck(sampBool, A_node);
+        ValidImageCheck(A_node);
     }
     fflush(stdout);
     return sampBool;
 }
-static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node)
+void ValidImageCheck(InstanceNode* A_node)
 {
     MC_STATUS               mcStatus;
     mcStatus = MC_Get_Value_To_String(A_node->msgID, MC_ATT_SOP_CLASS_UID, sizeof(A_node->SOPClassUID), A_node->SOPClassUID);
@@ -59,7 +59,6 @@ static SAMP_BOOLEAN ValidImageCheck(SAMP_BOOLEAN sampBool, InstanceNode* A_node)
     {
         PrintError("MC_Get_Value_To_String for SOP Instance UID failed", mcStatus);
     }
-    return sampBool;
 }
 /****************************************************************************
  *

@@ -18,7 +18,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y cppcheck
       
     - name: build SCU
-      run: g++ -Wall -Wextra --coverage -o SCU SCU/*.cpp
+      run: g++ --coverage -o SCU SCUFiles/*.cpp
       
     - name: static analysis
-      run: cppcheck SCU/Definitions.h SCU/*.cpp --enable=all --language=c++ --error-exitcode=1
+      run: cppcheck SCUFiles/Definitions.h SCUFiles/*.cpp --enable=all --language=c++ --error-exitcode=1

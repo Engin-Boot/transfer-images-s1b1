@@ -19,6 +19,7 @@ using namespace std;
 /*
  * Merge DICOM Toolkit Includes
  */
+extern "C" {
 #include "../mc3inc/mc3media.h"
 #include "../mc3inc/mergecom.h"
 #include "../mc3inc/diction.h"
@@ -30,7 +31,7 @@ using namespace std;
 #include "../mc3inc/stdtypes.h"
 
 #include "../mc3inc/general_util.h"
-
+}
    /*
     * Module constants
     */

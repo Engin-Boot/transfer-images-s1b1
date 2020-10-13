@@ -31,7 +31,7 @@ extern "C" {
 #include "../mc3inc/mc3services.h"
 #include "../mc3inc/pcd.h"
 #include "../mc3inc/stdtypes.h"
-
+#include "../mc3inc/pic.h"
 #include "../mc3inc/general_util.h"
 }
    /*

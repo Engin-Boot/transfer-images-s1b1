@@ -22,6 +22,7 @@ using namespace std;
 #include "../mc3inc/mc3media.h"
 #include "../mc3inc/mergecom.h"
 #include "../mc3inc/diction.h"
+#include "../mc3inc/mcstatus.h"
 
 #include "../mc3inc/general_util.h"
 

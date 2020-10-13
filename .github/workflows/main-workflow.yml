@@ -9,16 +9,10 @@ on:
 jobs:
   build:
   
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     
     steps:
     - uses: actions/checkout@v2
-    
-    - name: install cppcheck static analysis
-      run: sudo apt-get update && sudo apt-get install -y cppcheck
       
-    - name: build SCU
-      run: g++ --coverage -o SCU mc3lib/*.lib SCUFiles/*.cpp
-      
-    - name: static analysis
-      run: cppcheck SCUFiles/Definitions.h SCUFiles/*.cpp --enable=all --language=c++ --error-exitcode=1
+    - name: Setup msbuild.exe
+      uses: microsoft/setup-msbuild@v1.0.0

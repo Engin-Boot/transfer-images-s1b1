@@ -287,7 +287,7 @@ bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_synt
     }
     return true;
 }
-bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
+bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID)
 {
     MC_STATUS mcStatus;
     /*

@@ -27,7 +27,7 @@
 #ifndef MTI_GENERAL_UTIL_H
 #define MTI_GENERAL_UTIL_H
 
-#include "mc3msg.h"
+#include "../mc3inc/mc3msg.h"
 
 #ifdef __cplusplus
 extern "C" {

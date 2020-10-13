@@ -142,24 +142,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="mc3adll64.lib;catch.hpp" />
-    <ClInclude Include="mc3adll64.lib;Definitions.h" />
-    <ClInclude Include="mc3adll64.lib;general_util.h" />
+    <ClInclude Include="catch.hpp" />
+    <ClInclude Include="Definitions.h" />
+    <ClInclude Include="general_util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mc3adll64.lib;Command_Line.cpp">
+    <ClCompile Include="Command_Line.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="mc3adll64.lib;general_util.cpp" />
-    <ClCompile Include="mc3adll64.lib;List_Management.cpp" />
-    <ClCompile Include="mc3adll64.lib;Read_Image.cpp" />
-    <ClCompile Include="mc3adll64.lib;scu-main-function.cpp">
+    <ClCompile Include="general_util.cpp" />
+    <ClCompile Include="List_Management.cpp" />
+    <ClCompile Include="Read_Image.cpp" />
+    <ClCompile Include="scu-main-function.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="mc3adll64.lib;scu-main.cpp">
+    <ClCompile Include="scu-main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="mc3adll64.lib;Send_Image.cpp" />
+    <ClCompile Include="Send_Image.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

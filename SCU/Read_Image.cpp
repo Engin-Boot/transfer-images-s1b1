@@ -178,7 +178,7 @@ MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filena
         return(mcStatusTemp);
     }
 }
-static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
+bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
 {
     /*
          * Get the transfer syntax UID from the file to determine if the object
@@ -217,7 +217,7 @@ static bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER
 
     return true;
 }
-static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
+bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
 {
     //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     MC_STATUS mcStatus;
@@ -242,7 +242,7 @@ static bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A
     }
     return true;
 }
-static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID)
+bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID)
 {
     //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     /* form message with valid group 0 and transfer syntax */
@@ -265,7 +265,7 @@ static bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUI
     }
     return true;
 }
-static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
+bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
 {
     if (Transfer_Syntax_Encoding(mcStatus, A_msgID, A_syntax) == false)
     {
@@ -287,7 +287,7 @@ static bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*&
     }
     return true;
 }
-static bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
+bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
 {
     MC_STATUS mcStatus;
     /*
@@ -313,7 +313,7 @@ static bool Message_Handling(int*& A_msgID, char* sopClassUID, char* sopInstance
 
     return true;
 }
-static bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead)
+bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, size_t*& A_bytesRead)
 {
     CBinfo      callbackInfo = { 0 };
     MC_STATUS mcStatus;
@@ -333,7 +333,7 @@ static bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_S
     }
     return true;
 }
-static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
+bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
 {
     char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     size_t size_sopClassUID = sizeof(sopClassUID);
@@ -350,7 +350,7 @@ static bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filena
     return true;
 }
 
-static SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
+SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int               A_appID,
     char* A_filename,
     int* A_msgID,
@@ -524,7 +524,7 @@ bool ReadInCallBackFile(CBinfo*& callbackInfo, size_t& bytes_read, int*& A_isLas
     return true;
 }
 
-static MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
+MC_STATUS NOEXP_FUNC MediaToFileObj(char* A_filename,
     void* A_userInfo,
     int* A_dataSize,
     void** A_dataBuffer,
@@ -596,7 +596,7 @@ FORMAT_ENUM CheckSignatureOfMediaFile(FILE*& fp)
 
 }
 
-static FORMAT_ENUM CheckFileFormat(char* A_filename)
+FORMAT_ENUM CheckFileFormat(char* A_filename)
 {
     FILE* fp;
 

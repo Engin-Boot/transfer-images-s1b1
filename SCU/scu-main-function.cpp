@@ -371,3 +371,30 @@ void mainclass::ReleaseApplication()
     if (MC_Library_Release() != MC_NORMAL_COMPLETION)
         printf("Error releasing the library.\n");
 }
+/****************************************************************************
+ *
+ *  Function    :   PrintError
+ *
+ *  Description :   Display a text string on one line and the error message
+ *                  for a given error on the next line.
+ *
+ ****************************************************************************/
+void PrintError(const char* A_string, MC_STATUS A_status)
+{
+    char        prefix[30] = { 0 };
+    /*
+     *  Need process ID number for messages
+     */
+#ifdef UNIX
+    sprintf(prefix, "PID %d", getpid());
+#endif
+    if (A_status == -1)
+    {
+        printf("%s\t%s\n", prefix, A_string);
+    }
+    else
+    {
+        printf("%s\t%s:\n", prefix, A_string);
+        printf("%s\t\t%s\n", prefix, MC_Error_Message(A_status));
+    }
+}

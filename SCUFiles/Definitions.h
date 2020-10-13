@@ -22,6 +22,7 @@ using namespace std;
  * Merge DICOM Toolkit Includes
  */
 extern "C" {
+#include "../mc3inc/stdtypes.h"
 #include "../mc3inc/mc3media.h"
 #include "../mc3inc/mergecom.h"
 #include "../mc3inc/diction.h"
@@ -30,7 +31,6 @@ extern "C" {
 #include "../mc3inc/mc3items.h"
 #include "../mc3inc/mc3services.h"
 #include "../mc3inc/pcd.h"
-#include "../mc3inc/stdtypes.h"
 
 #include "../mc3inc/general_util.h"
 }

@@ -1,6 +1,8 @@
 /*
  * Standard OS Includes
  */
+#define _CRT_SECURE_NO_DEPRECATE
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,15 +21,19 @@ using namespace std;
 /*
  * Merge DICOM Toolkit Includes
  */
+extern "C" {
 #include "../mc3inc/mc3media.h"
 #include "../mc3inc/mergecom.h"
 #include "../mc3inc/diction.h"
 #include "../mc3inc/mcstatus.h"
 #include "../mc3inc/mc3msg.h"
-
+#include "../mc3inc/mc3items.h"
+#include "../mc3inc/mc3services.h"
+#include "../mc3inc/pcd.h"
+#include "../mc3inc/stdtypes.h"
 
 #include "../mc3inc/general_util.h"
-
+}
    /*
     * Module constants
     */

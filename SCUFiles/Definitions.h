@@ -187,6 +187,10 @@ bool ReadFile1(int& A_appID, char*& A_filename, int*& A_msgID, TRANSFER_SYNTAX*&
 bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename);
 
 void PrintError(const char* A_string, MC_STATUS A_status);
+bool CheckIfMCStatusNotOk(MC_STATUS mcStatus, const char* ErrorMessage);
+bool setServiceAndSOP(InstanceNode* A_node);
+bool GetSOPUIDAndSetService(InstanceNode* A_node);
+bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode*& A_node);
 
 SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int A_appID,

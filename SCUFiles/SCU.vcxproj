@@ -121,7 +121,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../mc3lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)/mc3lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>mc3adll64.lib;mc3adv64.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

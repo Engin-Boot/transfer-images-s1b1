@@ -110,3 +110,112 @@ TEST_CASE("When a request message is sent from SCU and it is not accepted then c
     }
 
 }
+//************Unit Tests Command_Line.cpp*********************
+TEST_CASE("when arguments are less than 3 or '-h' is passed as option then CheckIfHelp() returns true")
+{
+    SECTION("when arguments are less than 3 then CheckIfHelp() returns true") 
+    {
+        REQUIRE(CheckIfHelp("",2)==true);
+    }
+    SECTION("when '-h' is passed as option then CheckIfHelp() returns true")
+    {
+        REQUIRE(CheckIfHelp("-h",4) == true);
+    }
+}
+TEST_CASE("when arguments are less than 3 or '-h' is entered as an option then PrintHelp() returns SAMP_FALSE")
+{
+    const char* argv[] = { "SCU", "-h" };
+    REQUIRE(PrintHelp(2, argv) == SAMP_FALSE);
+}
+TEST_CASE("when a valid option is passed as an argument then the task corresponding to the option is performed and true is returned by MapOptions()")
+{
+    SECTION("when '-a' is passed as an argument then local AE is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        strcpy(store->LocalAE, "MERGE_STORE_SCU");
+        const char* argv[] = { "SCU", "-a" , "Transfer_Image_SCU"};
+        REQUIRE(MapOptions(1,argv,store) == true);
+    }
+    SECTION("when '-b' is passed as an argument then local port is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        store->ListenPort = 1115;
+        const char* argv[] = { "SCU", "-b" , "1515" };
+        REQUIRE(MapOptions(1, argv, store) == true);
+    }
+    SECTION("when '-f' is passed as an argument then the specified filename is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        const char* argv[] = { "SCU", "-f" , "image_list.txt" };
+        REQUIRE(MapOptions(1, argv, store) == true);
+    }
+    SECTION("when '-l' is passed as an argument then service list is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        strcpy(store->ServiceList, "Storage_SCU_Service_List");
+        const char* argv[] = { "SCU", "-l" , "Storage_Service_List" };
+        REQUIRE(MapOptions(1, argv, store) == true);
+    }
+    SECTION("when -n is passed as an argument then remote host is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        const char* argv[] = { "SCU", "-n" , "Remote_Host_SCP" };
+        REQUIRE(MapOptions(1, argv, store) == true);
+    }
+    SECTION("when '-p' is passed as an argument then remote port is set and MapOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        store->RemotePort = -1;
+        const char* argv[] = { "SCU", "-p" , "2020" };
+        REQUIRE(MapOptions(1, argv, store) == true);
+    }
+}
+TEST_CASE("when a valid extra option is passed as an argument then the task corresponding to the option is performed and true is returned by ExtraOptions()")
+{
+    SECTION("when 1 extra argument is passed then remote AE is set and ExtraOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        strcpy(store->RemoteAE, "MERGE_STORE_SCP");
+        const char* argv[] = { "SCU", "Transfer_Image_SCP" };
+        REQUIRE(ExtraOptions(1, argv, store) == true);
+    }
+    SECTION("when 2 extra arguments are passed then remote AE and start image parameters are set and ExtraOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        strcpy(store->RemoteAE, "MERGE_STORE_SCP");
+        store->StartImage = store->StopImage = 0;
+        const char* argv[] = { "SCU", "Transfer_Image_SCP" , "2" };
+        REQUIRE(ExtraOptions(1, argv, store) == true);
+    }
+    SECTION("when 3 extra arguments are passed then remote AE, start image and stop image parameters are set and ExtraOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        strcpy(store->RemoteAE, "MERGE_STORE_SCP");
+        store->StartImage = store->StopImage = 0;
+        const char* argv[] = { "SCU", "Transfer_Image_SCP" , "2", "5" };
+        REQUIRE(ExtraOptions(1, argv, store) == true);
+    }
+}
+TEST_CASE("when valid options are entered then CheckOptions() returns true else false")
+{
+    SECTION("when valid options are entered then corresponding task is performed and CheckOptions() returns true")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        const char* argv[] = { "SCU", "-a" , "Transfer_Image_SCU" };
+        REQUIRE(CheckOptions(1, argv, store) == true);
+    }
+    SECTION("when invalid options are entered then CheckOptions() returns false")
+    {
+        STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+        const char* argv[] = { "SCU", "-x" , "Transfer_Image_SCU" };
+        REQUIRE(CheckOptions(1, argv, store) == false);
+    }
+}
+TEST_CASE("when remote host name and port are given then CheckHostandPort() returns true else false")
+{
+    STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
+    const char* argv[] = { "SCU", "-n" , "Remote_Host_SCP" };
+    MapOptions(1, argv, store);
+    store->RemotePort = 2020;
+    REQUIRE(CheckHostandPort(store) == true);
+}

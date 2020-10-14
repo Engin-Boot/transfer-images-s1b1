@@ -177,6 +177,7 @@ MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filena
         fflush(stdout);
         return(mcStatusTemp);
     }
+    return mcStatusTemp;
 }
 bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
 {
@@ -472,6 +473,7 @@ bool firstCallProcedure(char*& A_filename, CBinfo*& callbackInfo, int& retStatus
             return false;
 
     }
+    return true;
 }
 
 bool SetBuffer(char*& A_filename, CBinfo*& callbackInfo, int& retStatus, int& A_isFirst, void* A_userInfo)
@@ -514,7 +516,7 @@ bool closeCallBackFile(CBinfo*& callbackInfo, int*& A_isLast)
 bool ReadInCallBackFile(CBinfo*& callbackInfo, size_t& bytes_read, int*& A_isLast)
 {
     if (!callbackInfo->fp)
-        return MC_CANNOT_COMPLY;
+        return false;
 
     bytes_read = fread(callbackInfo->buffer, 1, callbackInfo->bufferLength, callbackInfo->fp);
 

@@ -19,3 +19,6 @@ jobs:
     
     - name: Build SCU
       run: msbuild SCUFiles/SCU.vcxproj /p:configuration=debug /p:platform=x64 
+    
+    - name: Build SCU test project
+      run: msbuild SCUFiles/SCUTestProj.vcxproj /p:configuration=debug /p:platform=x64

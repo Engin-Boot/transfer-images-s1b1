@@ -89,7 +89,7 @@ void ValidImageCheck(InstanceNode* A_node)
 
 bool CheckTransferSyntax(int A_syntax)
 {
-    //Associated with ReadFileFromMedia
+    //Associated with ReadFileFromMedia checks whether transfer syntax is supported or not
     map<int, int> MapTransferSyntaxToValue;
 
     MapTransferSyntaxToValue[DEFLATED_EXPLICIT_LITTLE_ENDIAN] = 1;
@@ -181,22 +181,7 @@ MC_STATUS CreateEmptyFileAndStoreIt(int& A_appID, int*& A_msgID, char*& A_filena
 }
 bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_syntax)
 {
-    /*
-         * Get the transfer syntax UID from the file to determine if the object
-         * is encoded in a compressed transfer syntax.  IE, one of the JPEG or
-         * the RLE transfer syntaxes.  If we've specified on the command line
-         * that we are supporting encapsulated/compressed transfer syntaxes,
-         * go ahead an use the object, if not, reject it and return failure.
-         *
-         * Note that if encapsulated transfer syntaxes are supported, the
-         * services lists in the mergecom.app file must be expanded using
-         * transfer syntax lists to contain the JPEG syntaxes supported.
-         * Also, the transfer syntaxes negotiated for each service should be
-         * saved (as retrieved by the MC_Get_First/Next_Acceptable service
-         * calls) to match with the actual syntax of the object.  If they do
-         * not match the encoding of the pixel data may have to be modified
-         * before the file is sent over the wire.
-         */
+   
     char        transferSyntaxUID[UI_LENGTH + 2] = { 0 };
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_TRANSFER_SYNTAX_UID, sizeof(transferSyntaxUID), transferSyntaxUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
@@ -220,13 +205,11 @@ bool Transfer_Syntax_Encoding(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX
 }
 bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename, char* sopClassUID, char* sopInstanceUID, size_t& size_sopClassUID, size_t& size_sopInstanceUID)
 {
-    //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     MC_STATUS mcStatus;
     printf("Reading DICOM Part 10 format file in %s: %s\n", GetSyntaxDescription(*A_syntax), A_filename);
     mcStatus = MC_Get_Value_To_String(*A_msgID, MC_ATT_MEDIA_STORAGE_SOP_CLASS_UID, size_sopClassUID, sopClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
-
         printf("Get MC_ATT_AFFECTED_SOP_INSTANCE_UID failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
         MC_Free_File(A_msgID);
         fflush(stdout);
@@ -245,7 +228,6 @@ bool Image_Extraction(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filena
 }
 bool Message_Creation(MC_STATUS mcStatus, int*& A_msgID, char* sopClassUID, char* sopInstanceUID)
 {
-    //char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     /* form message with valid group 0 and transfer syntax */
     mcStatus = MC_Set_Value_From_String(*A_msgID, MC_ATT_AFFECTED_SOP_CLASS_UID, sopClassUID);
     if (mcStatus != MC_NORMAL_COMPLETION)
@@ -272,11 +254,6 @@ bool Syntax_Handling(MC_STATUS mcStatus, int*& A_msgID, TRANSFER_SYNTAX*& A_synt
     {
         return false;
     }
-    /*
-         * If we don't handle encapsulated transfer syntaxes, let's check the
-         * image transfer syntax to be sure it is not encoded as an encapsulated
-         * transfer syntax.
-         */
 
     if (!CheckTransferSyntax(*A_syntax))
     {
@@ -339,6 +316,7 @@ bool ReadFile2(int*& A_msgID, TRANSFER_SYNTAX*& A_syntax, char*& A_filename)
     char sopClassUID[UI_LENGTH + 2] = { 0 }, sopInstanceUID[UI_LENGTH + 2] = { 0 };
     size_t size_sopClassUID = sizeof(sopClassUID);
     size_t size_sopInstanceUID = sizeof(sopInstanceUID);
+
     if (Image_Extraction(A_msgID, A_syntax, A_filename, sopClassUID, sopInstanceUID, size_sopClassUID, size_sopInstanceUID) == false)
     {
         return false;
@@ -358,9 +336,6 @@ SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     TRANSFER_SYNTAX* A_syntax,
     size_t* A_bytesRead)
 {
-
-
-
     /*
      * Create new File object
      */
@@ -376,25 +351,7 @@ SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
         return SAMP_FALSE;
     }
 
-
-    /*
-     *  SCU service should set Transfer Syntax of DICOM send message explicitly to guarantee that SCP service would get
-     *  DICOM receive message with correct Transfer Syntax.
-     *
-     *  Corresponding DICOM service used for DICOM association to transfer the DICOM message
-     *  should be configured properly in mergecom.app configuration file.
-     */
-     /*
-         mcStatus = MC_Set_Message_Transfer_Syntax(*A_msgID, *A_syntax);
-         if (mcStatus != MC_NORMAL_COMPLETION)
-         {
-             printf("Set MC_Set_Message_Transfer_Syntax failed. Error %d (%s)\n", (int)mcStatus, MC_Error_Message(mcStatus));
-             MC_Free_File(A_msgID);
-             return SAMP_FALSE;
-         }
-     */
     fflush(stdout);
-
     return SAMP_TRUE;
 } /* ReadFileFromMedia() */
 
@@ -499,7 +456,6 @@ bool closeCallBackFile(CBinfo*& callbackInfo, int*& A_isLast)
         return false;
     }
 
-
     if (feof(callbackInfo->fp))
     {
         *A_isLast = 1;
@@ -593,39 +549,12 @@ FORMAT_ENUM CheckSignatureOfMediaFile(FILE*& fp)
             return MEDIA_FORMAT;
         }
     }
-
     return UNKNOWN_FORMAT;
-
 }
 
 FORMAT_ENUM CheckFileFormat(char* A_filename)
 {
     FILE* fp;
-
-    //char             vR[3] = "\0\0";
-
-    /*
-    union
-    {
-        unsigned short   groupNumber;
-        char      i[2];
-    } group;
-
-    unsigned short   elementNumber;
-
-    union
-    {
-        unsigned short  shorterValueLength;
-        char      i[2];
-    } aint;
-
-    union
-    {
-        unsigned long   valueLength;
-        char      l[4];
-    } along;
-
-    */
     if ((fp = fopen(A_filename, BINARY_READ)) != NULL)
     {
         if (fseek(fp, 128, SEEK_SET) == 0)
@@ -634,9 +563,6 @@ FORMAT_ENUM CheckFileFormat(char* A_filename)
         }
 
     }
-    /*
-     * Now try and determine the format if it is not media
-     */
-
+    fclose(fp);
     return UNKNOWN_FORMAT;
 } /* CheckFileFormat() */

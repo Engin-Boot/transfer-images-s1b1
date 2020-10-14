@@ -2,22 +2,17 @@
 
 bool mainclass::InitializeApplication()
 {
-
-    /* ------------------------------------------------------- */
-    /* This call MUST be the first call made to the library!!! */
-    /* ------------------------------------------------------- */
+    //Essential Initialization
     mcStatus = MC_Library_Initialization(NULL, NULL, NULL);
-    if (mcStatus != MC_NORMAL_COMPLETION)
+    if (CheckIfMCStatusNotOk(mcStatus, "Unable to initialize library"))
     {
-        PrintError("Unable to initialize library", mcStatus);
         return (false);
     }
 
     /*
      *  Register this DICOM application
      */
-    cout << "***ApplicationID" << applicationID << endl;
-    cout << "options.localAE" << options.LocalAE << endl;
+  
     mcStatus = MC_Register_Application(&applicationID, options.LocalAE);
     if (mcStatus != MC_NORMAL_COMPLETION)
     {
@@ -26,14 +21,11 @@ bool mainclass::InitializeApplication()
         fflush(stdout);
         return(false);
     }
-    cout << "***ApplicationID" << applicationID << endl;
-    cout << "options.localAE" << options.LocalAE << endl;
     return mainclass::InitializeList();
 }
 
 bool mainclass::InitializeList()
 {
-
     if (options.UseFileList)
     {
         /* Read the command line file to create the list */
@@ -55,12 +47,11 @@ bool mainclass::InitializeList()
 
     mainclass::VerboseBeforeConnection();
     return mainclass::CreateAssociation();
-
 }
 
 void mainclass::ReadFileByFILENAME()
 {
-    fstatus = fscanf(fp, "%s", fname);
+    fstatus = fscanf(fp, "%512s", fname);
     while (fstatus != EOF && fstatus != 0)
     {
         ReadEachLineInFile();
@@ -108,18 +99,15 @@ char* mainclass::checkServiceList(char* ServiceList)
 
 MC_STATUS mainclass::OpenAssociation()
 {
-    char* remoteHostName = mainclass::checkRemoteHostName(options.RemoteHostname);
-    char* ServiceList = mainclass::checkServiceList(options.ServiceList);
+    char* tempremoteHostName = mainclass::checkRemoteHostName(options.RemoteHostname);
+    char* tempServiceList = mainclass::checkServiceList(options.ServiceList);
 
     return MC_Open_Association(applicationID,
         &associationID,
         options.RemoteAE,
         options.RemotePort != -1 ? &options.RemotePort : NULL,
-        //options.RemoteHostname[0] ? options.RemoteHostname : NULL,
-        remoteHostName,
-        //options.ServiceList[0] ? options.ServiceList : NULL);
-        ServiceList);
-
+        tempremoteHostName,
+        tempServiceList);
 }
 bool mainclass::CreateAssociation()
 {
@@ -187,16 +175,8 @@ void mainclass::VerboseAfterConnection()
          * Print out User Identity information if negotiated
          */
         printf("  User Identity type:       None\n\n\n");
-
         printf("Services and transfer syntaxes negotiated:\n");
 
-        /*
-         * Go through all of the negotiated services.  If encapsulated /
-         * compressed transfer syntaxes are supported, this code should be
-         * expanded to save the services & transfer syntaxes that are
-         * negotiated so that they can be matched with the transfer
-         * syntaxes of the images being sent.
-         */
         mainclass::VerboseTransferSyntax();
     }
     else
@@ -284,20 +264,13 @@ bool mainclass::ImageTransfer()
 
     /*
      * Send image read in with ReadImage.
-     *
-     * Because SendImage may not have actually sent an image even though it has returned success,
-     * the calculation of performance data below may not be correct.
+     * Save image transfer information in list
      */
-
-
-     /*
-      * Save image transfer information in list
-      */
     if (SendImageAndUpdateNode() == false)
         return false;
     /*
-         * Traverse through file list
-         */
+     * Traverse through file list
+     */
     node = node->Next;
     return true;
 }
@@ -306,16 +279,11 @@ void mainclass::StartSendImage()
     node = instanceList;
     while (node)
     {
-        //imageStartTime = GetIntervalStart();
-
         if (ImageTransfer() == false)
         {
             break;
         }
-
-
-    }   /* END for loop for each image */
-
+    } 
 }
 
 void mainclass::CloseAssociation()
@@ -332,23 +300,12 @@ void mainclass::CloseAssociation()
         MC_Abort_Association(&associationID);
     }
 
-    /*
-     * Calculate the transfer rate.  Note, for a real performance
-     * numbers, a function other than time() to measure elapsed
-     * time should be used.
-     */
     if (options.Verbose)
     {
         printf("Association Closed.\n");
     }
-
-    // seconds = GetIntervalElapsed(startTime);
-
     printf("Data Transferred: %luMB\n", (unsigned long)(totalBytesRead / (1024 * 1024)));
-    //printf("    Time Elapsed: %.3fs\n", seconds);
-    //printf("   Transfer Rate: %.1fKB/s\n", ((float)totalBytesRead / seconds) / 1024.0);
     fflush(stdout);
-
 }
 
 void mainclass::ReleaseApplication()
@@ -371,6 +328,7 @@ void mainclass::ReleaseApplication()
     if (MC_Library_Release() != MC_NORMAL_COMPLETION)
         printf("Error releasing the library.\n");
 }
+
 /****************************************************************************
  *
  *  Function    :   PrintError
@@ -397,4 +355,16 @@ void PrintError(const char* A_string, MC_STATUS A_status)
         printf("%s\t%s:\n", prefix, A_string);
         printf("%s\t\t%s\n", prefix, MC_Error_Message(A_status));
     }
+}
+
+
+bool CheckIfMCStatusNotOk(MC_STATUS mcStatus, const char* ErrorMessage)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError(ErrorMessage, mcStatus);
+        fflush(stdout);
+        return true;
+    }
+    return false;
 }

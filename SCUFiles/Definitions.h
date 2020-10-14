@@ -20,20 +20,16 @@ using namespace std;
 /*
  * Merge DICOM Toolkit Includes
  */
+#include "mc3media.h"
+#include "mc3msg.h"
+#include "mergecom.h"
+#include "diction.h"
+#include "mc3services.h"
+#include "mc3items.h"
 
-#include "../mc3inc/mc3media.h"
-#include "../mc3inc/mc3msg.h"
-#include "../mc3inc/mergecom.h"
-#include "../mc3inc/diction.h"
-#include "../mc3inc/mc3services.h"
-#include "../mc3inc/mc3items.h"
-#include "../mc3inc/general_util.h"
+#include "general_util.h"
 
-   /*
-    * Module constants
-    */
-
-    /* DICOM VR Lengths */
+/* DICOM VR Lengths */
 #define AE_LENGTH 16
 #define UI_LENGTH 64
 #define SVC_LENGTH 130
@@ -61,13 +57,14 @@ using namespace std;
 #endif
 
 /*
- * Module type declarations
+ * Structures
  */
 
  /*
   * CBinfo is used to callback functions when reading in stream objects
   * and Part 10 format objects.
   */
+
 typedef struct CALLBACKINFO
 {
     FILE* fp;
@@ -130,13 +127,10 @@ typedef struct instance_node
     int    msgID;                       /* messageID of for this node */
     char   fname[1024];                 /* Name of file */
     TRANSFER_SYNTAX transferSyntax;     /* Transfer syntax of file */
-
     char   SOPClassUID[UI_LENGTH + 2];    /* SOP Class UID of the file */
     char   serviceName[48];             /* Merge DICOM Toolkit service name for SOP Class */
     char   SOPInstanceUID[UI_LENGTH + 2]; /* SOP Instance UID of the file */
-
     size_t       imageBytes;            /* size in bytes of the file */
-
     unsigned int dicomMsgID;            /* DICOM Message ID in group 0x0000 elements */
     unsigned int status;                /* DICOM status value returned for this file. */
     char   statusMeaning[STR_LENGTH];   /* Textual meaning of "status" */
@@ -144,17 +138,20 @@ typedef struct instance_node
     SAMP_BOOLEAN failedResponse;        /* Bool saying if a failure response message was received */
     SAMP_BOOLEAN imageSent;             /* Bool saying if the image has been sent over the association yet */
     SAMP_BOOLEAN mediaFormat;           /* Bool saying if the image was originally in media format (Part 10) */
-
     struct instance_node* Next;         /* Pointer to next node in list */
 
 } InstanceNode;
+
+//Global Function Declarations
+
 int main(int argc, const char* argv[]);
 
+//Command Line and Input Related Functions
 SAMP_BOOLEAN TestCmdLine(int A_argc, const char* A_argv[], STORAGE_OPTIONS* A_options);
 void RemoteManagement(STORAGE_OPTIONS* A_options);
 bool CheckHostandPort(STORAGE_OPTIONS* A_options);
 SAMP_BOOLEAN PrintHelp(int A_argc, const char* A_argv[]);
-bool CheckIfHelp(string str, int A_argc);
+bool CheckIfHelp(const string& str, int A_argc);
 void OptionHandling(int A_argc, const char* A_argv[], STORAGE_OPTIONS* A_options);
 bool CheckOptions(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
 bool ExtraOptions(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
@@ -168,13 +165,18 @@ void Filename(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
 void ServiceList(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
 void RemoteHost(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
 void RemotePort(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
-void Verbose(int i, const char* A_argv[], STORAGE_OPTIONS* A_options);
 void PrintCmdLine(void);
+
+//List Update related functions
+
 SAMP_BOOLEAN AddFileToList(InstanceNode** A_list, char* A_fname);
 void list_updation(InstanceNode** A_list, InstanceNode* newNode);
 SAMP_BOOLEAN UpdateNode(InstanceNode* A_node);
 void FreeList(InstanceNode** A_list);
 int GetNumNodes(InstanceNode* A_list);
+
+//Image Read and Send related functions
+
 FORMAT_ENUM CheckFileFormat(char* A_filename);
 SAMP_BOOLEAN ReadImage(STORAGE_OPTIONS* A_options, int A_appID, InstanceNode* A_node);
 void ValidImageCheck(InstanceNode* A_node);
@@ -202,6 +204,7 @@ SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     TRANSFER_SYNTAX* A_syntax,
     size_t* A_bytesRead);
 
+//Main working class
 
 class mainclass
 {
@@ -211,27 +214,30 @@ public:
     MC_STATUS               mcStatus;
     int                     applicationID, associationID, imageCurrent;
     int                     imagesSent, totalImages, fstatus;
-    char* fname; /* Extra long, just in case */
+    char* fname;
     ServiceInfo             servInfo;
     size_t                  totalBytesRead;
     InstanceNode* instanceList, * node;
-    FILE* fp = NULL;
+    FILE* fp;
 
-
-    mainclass(char* filename)
+    explicit mainclass(char* filename)
     {
-
+        sampBool = SAMP_TRUE;
+        mcStatus = MC_NORMAL_COMPLETION;
         applicationID = -1;
         associationID = -1;
         imageCurrent = 0;
         imagesSent = 0L;
         totalImages = 0L;
         fstatus = 0;
-        fname = filename; /* Extra long, just in case */
+        fname = filename; 
         totalBytesRead = 0L;
         instanceList = NULL;
         node = NULL;
         fp = NULL;
+        servInfo = { 0 };
+        options = { 0 };
+        
     }
 
     bool InitializeApplication();

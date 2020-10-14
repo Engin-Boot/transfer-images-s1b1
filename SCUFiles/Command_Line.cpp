@@ -95,7 +95,7 @@ SAMP_BOOLEAN PrintHelp(int A_argc, const char* A_argv[])
     }
     return SAMP_TRUE;
 }
-bool CheckIfHelp(string str, int A_argc)
+bool CheckIfHelp(const string& str, int A_argc)
 {
     if ((str == "-h") || (A_argc < 3))
     {

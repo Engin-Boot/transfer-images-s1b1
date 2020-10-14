@@ -20,18 +20,6 @@
  *
  ****************************************************************************/
 
-
-bool CheckIfMCStatusNotOk(MC_STATUS mcStatus, const char* ErrorMessage)
-{
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError(ErrorMessage, mcStatus);
-        fflush(stdout);
-        return true;
-    }
-    return false;
-}
-
 bool setServiceAndSOP(InstanceNode* A_node)
 {
     MC_STATUS mcStatus;
@@ -60,22 +48,18 @@ bool GetSOPUIDAndSetService(InstanceNode* A_node)
     {
         return true;
     }
-
     return false;
-
 }
 
 bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode*& A_node)
 {
     std::map<MC_STATUS, string> SendRequestMap;
-
     SendRequestMap[MC_ASSOCIATION_ABORTED] = "MC_Send_Request_Message failed";
     SendRequestMap[MC_SYSTEM_ERROR] = "MC_Send_Request_Message failed";
     SendRequestMap[MC_UNACCEPTABLE_SERVICE] = "MC_Send_Request_Message failed";
 
 
     if (SendRequestMap.find(mcStatus) != SendRequestMap.end()) {
-        //CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");
         return CheckIfMCStatusNotOk(mcStatus, "MC_Send_Request_Message failed");;
     }
     else if (mcStatus != MC_NORMAL_COMPLETION)
@@ -85,7 +69,6 @@ bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode*& A_node)
         CheckIfMCStatusNotOk(mcStatus, "Warning: MC_Send_Request_Message failed");
         return (false);
     }
-
     A_node->imageSent = SAMP_TRUE;
     fflush(stdout);
     return false;
@@ -98,7 +81,6 @@ SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, Instance
     A_node->imageSent = SAMP_FALSE;
 
     /* Get the SOP class UID and set the service */
-
     /* set affected SOP Instance UID */
 
     if (GetSOPUIDAndSetService(A_node))
@@ -115,9 +97,7 @@ SAMP_BOOLEAN SendImage(STORAGE_OPTIONS* A_options, int A_associationID, Instance
     printf("      UID: %s\n", A_node->SOPInstanceUID);
     printf("     Size: %lu bytes\n", (unsigned long)A_node->imageBytes);
 
-
     mcStatus = MC_Send_Request_Message(A_associationID, A_node->msgID);
-
     if (checkSendRequestMessage(mcStatus, A_node))
         return (SAMP_FALSE);
 

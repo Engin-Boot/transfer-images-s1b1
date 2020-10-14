@@ -21,7 +21,7 @@ jobs:
       run: msbuild SCUFiles/SCU.vcxproj /p:configuration=debug /p:platform=x64
     
     - name: static analysis of SCU
-      run: ./cppcheck.exe SCUFiles/Command_Line.cpp --verbose --std=c++11 --language=c++ --enable=all
+      run: ./Cppcheck_Config/cppcheck.exe SCUFiles/Command_Line.cpp --verbose --std=c++11 --language=c++ --enable=all
     
     - name: Cleaning SCU build folders
       run: msbuild SCUFiles/SCU.vcxproj /t:clean /p:configuration=debug /p:platform=x64

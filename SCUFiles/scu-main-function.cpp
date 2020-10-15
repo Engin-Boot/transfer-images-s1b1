@@ -237,7 +237,11 @@ bool mainclass::SendImageAndUpdateNode()
         MC_Release_Application(&applicationID);
         return false;
     }
-    UpdateImageSentCount();
+    return true;
+
+}
+bool mainclass::ResponseMessages()
+{
     sampBool = ReadResponseMessages(&options, associationID, 0, &instanceList, NULL);
     if (!sampBool)
     {
@@ -249,20 +253,36 @@ bool mainclass::SendImageAndUpdateNode()
     }
     if (options.asscInfo.MaxOperationsInvoked > 0)
     {
-        while (GetNumOutstandingRequests(instanceList) >= options.asscInfo.MaxOperationsInvoked)
-        {
-            sampBool = ReadResponseMessages(&options, associationID, 10, &instanceList, NULL);
-            if (!sampBool)
-            {
-                printf("Failure in reading response message, aborting association.\n");
-                MC_Abort_Association(&associationID);
-                MC_Release_Application(&applicationID);
-                break;
-            }
-        }
+        WaitforResponse();
     }
     return true;
-
+}
+void mainclass::WaitforResponse()
+{
+    while (GetNumOutstandingRequests(instanceList) >= options.asscInfo.MaxOperationsInvoked)
+    {
+        sampBool = ReadResponseMessages(&options, associationID, 10, &instanceList, NULL);
+        if (!sampBool)
+        {
+            printf("Failure in reading response message, aborting association.\n");
+            MC_Abort_Association(&associationID);
+            MC_Release_Application(&applicationID);
+            break;
+        }
+    }
+}
+bool mainclass::SendAndResponse()
+{
+    if (SendImageAndUpdateNode() == false)
+    {
+        return false;
+    }
+    UpdateImageSentCount();
+    if (ResponseMessages() == false)
+    {
+        return false;
+    }
+    return true;
 }
 bool mainclass::ImageTransfer()
 {
@@ -285,7 +305,7 @@ bool mainclass::ImageTransfer()
      * Send image read in with ReadImage.
      * Save image transfer information in list
      */
-    if (SendImageAndUpdateNode() == false)
+    if (SendAndResponse() == false)
         return false;
     /*
      * Traverse through file list
@@ -427,7 +447,7 @@ int GetNumOutstandingRequests(InstanceNode* A_list)
     node = A_list;
     while (node)
     {
-        if ((node->imageSent == SAMP_TRUE) && (node->responseReceived == SAMP_FALSE))
+        if ((node->imageSent == SAMP_TRUE) & (node->responseReceived == SAMP_FALSE))
             outstandingResponseMsgs++;
 
         node = node->Next;

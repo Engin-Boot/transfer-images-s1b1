@@ -1,4 +1,4 @@
-
+#include "Definitions.h"
 /****************************************************************************
  *
  *  Function    :   ReadResponseMessages

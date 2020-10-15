@@ -257,6 +257,10 @@ public:
     void StartSendImage();
     bool ImageTransfer();
     bool SendImageAndUpdateNode();
+    bool ResponseMessages();
+    void WaitforResponse();
+    bool SendAndResponse();
+    void checkResponseMsg();
     void UpdateImageSentCount();
 
     void CloseAssociation();

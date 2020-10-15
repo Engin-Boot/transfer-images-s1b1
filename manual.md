@@ -1,6 +1,6 @@
-#User Manual
+# User Manual
 
-##About
+## About
 
 This application is a Service Class User(SCU)build over DICOM Storage Service Class supported by MergeCom toolkit. SCU sends message to a DICOM SCP(Service Class Provider). A third party SCP can be used along with this SCU. SCU acts as a client and SCP as a server which receives message from client.
 

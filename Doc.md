@@ -58,19 +58,109 @@ storing useful information like transfer syntax and size.
 This module manages the Instance Node list. The list accommodates
  all files to send and keep update their status after sending them.
 
-### Add File To List
+##### Add File To List
 
 * This function adds new image files to a linked list by using
  list updation,
 after checking whether they are actually present.
 It also initialize the status of each file.
 
-### Update Node and Get Num Node
+##### Update Node and Get Num Node
 
 * This gives a message ID for tracking message
 
 * Get total count of files to send
 
-### Free List
+##### Free List
 
 * This deletes the list after successful transfer at the end
+
+## SendImage
+
+It sends message contained in the node to the associated application.
+It gets DICOM service object pair(SOP) UID and run mergecom services.
+After setting services it sends message request and then checks request message acceptance.
+
+##### GetSOPUIDandSetService()
+
+* This function runs mergecom service
+
+* Sets service and SOP UID
+
+* Called by SendImage()
+
+##### setServiceAndSOP
+
+* Sets service and SOP UID
+
+* Called by GetSOPUIDandSetService()
+
+##### checkSendRequestMessage()
+
+* checks whether message has been accepted by server.
+
+* Called by SendImage()
+
+##Media To File Object
+
+This function is used to set callback to read a file in DICOM Part 10 format. DICOM part 10 describes all supported formats.
+
+##### MediaToFileObj()
+
+* This function sets callback info object, allocates buffer to it to read file
+
+* Called by Read Image module under CreateEmptyFileandStoreIt
+
+##### SetBuffer()
+
+* If it is the first call then buffer is to be set otherwise it has been already created
+
+*called by MediaToFileObj()
+
+##### firstCallProcedure()
+
+* If this is the first call to readImage a buffer is required, it checks if buffer is set and opens the file in callback info
+
+* called by SetBuffer()
+
+##### checkIfBufferSet()
+
+* checks retStatus flag to check if buffer is set
+
+* called by firstCallProcedure()
+
+##### AllocateBuffer()
+
+* If buffer is not already set it allocates buffer as per the buffer work size
+
+* called by checkIfBufferSet()
+
+##### GetWorkBufferSize()
+
+* returns work buffer size initially set in WORK_BUFFER_SIZE
+
+* called by AllocateBuffer()
+
+##### ReadInCallBackFile()
+
+* reads the call back file and stores bytes read
+
+* after reading callback is closed
+
+* called by MediaToFileObj()
+
+##### closeCallBackFile()
+
+* after callback file is read it is closed by it
+
+* called by ReadInCallBackFile()
+
+## CheckFileFormat()
+
+* A predefined DICOM signature is used to identify whether the file to be read is a DICOM file or not. This function verifies the file. This predefined signature can be changed.
+
+* called by read image
+
+## CheckSignatureOfMediaFile()
+
+* checks the file being read has the right signature. This is done to check validity of file. Signature is predefined.

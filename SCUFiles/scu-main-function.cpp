@@ -55,6 +55,7 @@ void mainclass::ReadFileByFILENAME()
     while (fstatus != EOF && fstatus != 0)
     {
         ReadEachLineInFile();
+        fstatus = fscanf(fp, "%s", fname);
     }
     fclose(fp);
 }

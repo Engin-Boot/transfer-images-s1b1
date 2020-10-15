@@ -25,6 +25,8 @@ SAMP_BOOLEAN TestCmdLine(int A_argc, const char* A_argv[], STORAGE_OPTIONS* A_op
     /*
      * Set default values
      */
+    
+    
     A_options->StartImage = 0;
     A_options->StopImage = 0;
 

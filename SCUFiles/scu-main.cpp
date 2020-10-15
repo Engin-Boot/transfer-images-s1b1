@@ -34,7 +34,6 @@ int main(int argc, const char* argv[])
      * command line
      * Then create association with server application
      */
-
     if (obj.InitializeApplication() == false) {
 
         return (EXIT_FAILURE);

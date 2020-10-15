@@ -111,3 +111,26 @@ is the start image number and the 3rd image is the stop image number.
 * It is called by TestCmdLine() and PrintHelp() in this module. 
 * It is called whenever user wants to see the help guide printed on the command line. It prints all valid 
 options that the user can enter on the command line in order to customize.
+
+# Read_Image.cpp
+
+## Overall Description
+
+This module reads various media format images and stores it as message. It has all functions necessary to
+read various media formats and to create messages from dicom images and store it.
+
+## Functional Breakdown
+
+### ReadImage()
+### ValidImageCheck()
+### CheckTransferSyntax()
+### CloseCallBackInfo()
+### CreateEmptyFileAndStoreIt()
+### Transfer_Syntax_Encoding()
+### Image_Extraction()
+### Message_Creation()
+### Syntax_Handling()
+### Message_Handling()
+### ReadFile1()
+### ReadFile2()
+### ReadFileFromMedia()

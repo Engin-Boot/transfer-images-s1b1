@@ -27,7 +27,7 @@ merge.ini has paths to mercom.app, mergecom.pro, mergecom.srv.
 
 Now You are ready to run SCU.exe
 
-##Command
+## Command
 In command prompt reach path to SCU.exe, now enter command SCU a list of command syntax of features supported will be displayed. Enter the command you want. The media file(.img) to be sent should be in the same directory.
 Example:
 SCU remote_ae 0 2: This command will send file 0.img to 2.img to this SCP

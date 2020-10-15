@@ -122,15 +122,68 @@ read various media formats and to create messages from dicom images and store it
 ## Functional Breakdown
 
 ### ReadImage()
+
+* This function is called by the ImageTransfer() function of mainclass.
+* This function reads the media image file and checks if the image is a valid dicom image.
+
 ### ValidImageCheck()
+
+* This function is called by ReadImage().
+* This function checks if the image is a valid dicom image and displays error message if it is not.
+
 ### CheckTransferSyntax()
+
+* This function is called by Syntax_Handling().
+* This function checks whether the transfer syntax is supported or not. 
+
 ### CloseCallBackInfo()
+
+* This function is called by CreateEmptyFileAndStoreIt().
+* This function closes the file connection and frees the buffer.
+
 ### CreateEmptyFileAndStoreIt()
+
+* This function is called by ReadFile1().
+* This function creates an empty file object and opens it. 
+
 ### Transfer_Syntax_Encoding()
+
+* This function is called by Syntax_Handling().
+* This function checks if the transfer syntax encoding is valid.
+
 ### Image_Extraction()
+
+* This function is called by ReadFile2().
+* It checks whether the media image is a valid dicom file or not.
+
 ### Message_Creation()
+
+* This function is called by Message_Handling().
+* It forms a message with valid group and transfer syntax.
+
 ### Syntax_Handling()
+
+* This function is called by ReadFile1().
+* It calls Transfer_Syntax_Encoding() and CheckTransferSyntax() handles transfer syntax of image.
+
 ### Message_Handling()
+
+* It is called by ReadFile2().
+* It converts file object to message object and calls Message_Creation() to create message.
+
 ### ReadFile1()
+
+* It is called by ReadFileFromMedia().
+* It calls CreateEmptyFileAndStoreIt(), CloseCallBackInfo() and Syntax_Handling() in that order and performs
+the first part of reading the image. 
+
 ### ReadFile2()
+
+* It is called by ReadFileFromMedia().
+* It calls Image_Extraction() and Message_Handling() in that order and performs
+the second part of reading the image and creating a message. 
+
 ### ReadFileFromMedia()
+
+* It is called by ReadImage().
+* This function reads the image file from media format and stores it in the form of a message.

@@ -200,6 +200,9 @@ bool setServiceAndSOP(InstanceNode* A_node);
 bool GetSOPUIDAndSetService(InstanceNode* A_node);
 bool checkSendRequestMessage(MC_STATUS mcStatus, InstanceNode*& A_node);
 
+SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationID, int A_timeout, InstanceNode** A_list, InstanceNode* A_node);
+SAMP_BOOLEAN CheckResponseMessage(int A_responseMsgID, unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength);
+
 SAMP_BOOLEAN ReadFileFromMedia(STORAGE_OPTIONS* A_options,
     int A_appID,
     char* A_filename,
@@ -262,7 +265,7 @@ public:
     bool SendAndResponse();
     void checkResponseMsg();
     void UpdateImageSentCount();
-
+    void checkResponseMsg()
     void CloseAssociation();
     void ReleaseApplication();
 

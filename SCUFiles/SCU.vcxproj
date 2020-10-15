@@ -153,6 +153,7 @@
     <ClCompile Include="general_util.cpp" />
     <ClCompile Include="List_Management.cpp" />
     <ClCompile Include="Read_Image.cpp" />
+    <ClCompile Include="ResponseMessage.cpp" />
     <ClCompile Include="scu-main-function.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>

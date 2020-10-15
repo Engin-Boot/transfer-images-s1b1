@@ -1,6 +1,6 @@
 # Description
 
-## Main
+# Main
 
 Main stores the user command line input into structures and calls all routines that
 are required as per input.
@@ -53,7 +53,7 @@ storing useful information like transfer syntax and size.
 
 * Free instance list.
 
-## List Management
+# List Management
 
 This module manages the Instance Node list. The list accommodates
  all files to send and keep update their status after sending them.
@@ -327,7 +327,7 @@ This function is used to set callback to read a file in DICOM Part 10 format. DI
 
 * checks the file being read has the right signature. This is done to check validity of file. Signature is predefined.
 
-## SendImage
+# SendImage
 
 It sends message contained in the node to the associated application.
 It gets DICOM service object pair(SOP) UID and run mergecom services.

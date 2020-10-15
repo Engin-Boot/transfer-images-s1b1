@@ -6,18 +6,18 @@ This file has all the functions required for taking the options from command lin
 
 ## Functional Breakdown
 
-### - TestCmdLine()
+### * TestCmdLine()
 
 This is the function which is called by main() to set the parameters according to the inputted options. If for any parameter
 an option has not been specified by user then the default value for the parameter is set in this function itself.
 
-### - RemoteManagement()
+### * RemoteManagement()
 
 This function is called by TestCmdLine() and it sets the Service List as the default Service List when user inputs the remote hostname
 and port on the command line. This is done so that there is no failure in establishing the connection, because the user may not have the
 remote system configured in the mergecom.app file.
 
-### - CheckHostandPort()
+### * CheckHostandPort()
 
 Checks whether user has specified remote hostname and port on the command line. This is called by RemoteManagement().
 

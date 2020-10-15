@@ -149,6 +149,7 @@
     <ClCompile Include="general_util.cpp" />
     <ClCompile Include="List_Management.cpp" />
     <ClCompile Include="Read_Image.cpp" />
+    <ClCompile Include="ResponseMessage.cpp" />
     <ClCompile Include="scu-main-function.cpp" />
     <ClCompile Include="Send_Image.cpp" />
     <ClCompile Include="TestSCU.cpp" />

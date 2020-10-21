@@ -224,25 +224,7 @@ public:
     InstanceNode* instanceList, * node;
     FILE* fp;
 
-    explicit mainclass(char* filename)
-    {
-        sampBool = SAMP_TRUE;
-        mcStatus = MC_NORMAL_COMPLETION;
-        applicationID = -1;
-        associationID = -1;
-        imageCurrent = 0;
-        imagesSent = 0L;
-        totalImages = 0L;
-        fstatus = 0;
-        fname = filename; 
-        totalBytesRead = 0L;
-        instanceList = NULL;
-        node = NULL;
-        fp = NULL;
-        servInfo = { 0 };
-        options = { 0 };
-        
-    }
+    explicit mainclass(char* filename) : sampBool(SAMP_TRUE), mcStatus(MC_NORMAL_COMPLETION), applicationID(-1), associationID(-1), imageCurrent(0), imagesSent(0L), totalImages(0L), fstatus(0), fname(filename), totalBytesRead(0L), instanceList(NULL), node(NULL), fp(NULL), servInfo({0}), options({0}) {}
 
     bool InitializeApplication();
     bool InitializeList();

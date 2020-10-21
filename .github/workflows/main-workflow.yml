@@ -17,14 +17,12 @@ jobs:
     - name: Setup msbuild.exe
       uses: microsoft/setup-msbuild@v1.0.0
     
-    - name: Build SCU
-      run: msbuild SCUFiles/SCU.vcxproj /p:configuration=release /p:platform=x64
-    
     - name: static analysis of SCU
       run: ./Cppcheck_Config/cppcheck.exe SCUFiles/Command_Line.cpp SCUFiles/List_Management.cpp SCUFiles/Read_Image.cpp SCUFiles/Send_Image.cpp SCUFiles/scu-main.cpp SCUFiles/scu-main-function.cpp --verbose --std=c++11 --language=c++ --enable=all
-    
-    - name: Cleaning SCU build folders
-      run: msbuild SCUFiles/SCU.vcxproj /t:clean /p:configuration=release /p:platform=x64
 
     - name: Build SCU test project
-      run: msbuild SCUFiles/SCUTestProj.vcxproj /p:configuration=release /p:platform=x64
+      run: msbuild SCUFiles/SCUTestProj.vcxproj /p:configuration=release /p:platform=x64 /p:OutDir="build_output"
+
+    - name: Testing SCU
+      shell: cmd
+      run: SCUFiles/build_outpu/SCUTestProj.exe

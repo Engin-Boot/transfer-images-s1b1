@@ -81,7 +81,7 @@ SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationI
 
     if (!node)
     {
-        printf("Message ID Being Responded To tag does not match message sent over association: %d\n", dicomMsgID);
+        printf("Message ID Being Responded To tag does not match message sent over association: %u\n", dicomMsgID);
         MC_Free_Message(&responseMessageID);
         fflush(stdout);
         return (SAMP_TRUE);

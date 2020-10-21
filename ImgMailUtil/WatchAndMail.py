@@ -14,7 +14,7 @@ curPath=pathlib.Path().absolute()
 port = 1025  # For SSL
 smtp_server = "localhost"
 sender_email = "my@gmail.com"  # Enter your address
-receiver_email = "your@gmail.com"  # Enter receiver address
+receiver_email = "receiver@gmail.com"  # Enter receiver address
 #password = input("Type your password and press enter: ")
 
 def sendmail(msg):
@@ -35,6 +35,7 @@ class Handler(watchdog.events.PatternMatchingEventHandler):
         
         New file: % s"""""% event.src_path)
         sendmail(message)
+        
         # Event is created, you can process it now
 
    # def on_modified(self, event):

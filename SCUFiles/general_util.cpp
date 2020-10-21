@@ -22,7 +22,7 @@
 #include <sys/select.h> 
 #endif
 
-#include "general_util.h"
+#include "mc3inc/general_util.h"
 
 #if defined(CLOCK_MONOTONIC)
     /* Use clock_gettime, which returns struct timespec */

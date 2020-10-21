@@ -2,6 +2,10 @@
 
 bool mainclass::InitializeApplication()
 {
+    /* ------------------------------------------------------- */
+    /* This call MUST be the first call made to the library!!! */
+    /* ------------------------------------------------------- */
+
     //Essential Initialization
     mcStatus = MC_Library_Initialization(NULL, NULL, NULL);
     if (CheckIfMCStatusNotOk(mcStatus, "Unable to initialize library"))

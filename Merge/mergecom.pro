@@ -174,7 +174,7 @@
 
 [ASSOC_PARMS]
 
-LICENSE                              = XXXX-XXXX-XXXX
+LICENSE                              = 647D-7E3D-F3E4
 IMPLEMENTATION_CLASS_UID             = 2.16.840.1
 IMPLEMENTATION_VERSION               = MergeCOM3_5_10_0
 LOCAL_APPL_CONTEXT_NAME              = 1.2.840.10008.3.1.1.1
@@ -652,8 +652,8 @@ INACTIVITY_TIMEOUT        = 15
 
 LARGE_DATA_STORE                        = MEM
 LARGE_DATA_SIZE                         = 4096
-DICTIONARY_FILE                         = ../mc3msg/mrgcom3.dct
-MSG_INFO_FILE                           = ../mc3msg/mrgcom3.msg
+DICTIONARY_FILE                         = %MC3MSG%\mrgcom3.dct
+MSG_INFO_FILE                           = %MC3MSG%\mrgcom3.msg
 TEMP_FILE_DIRECTORY                     = .
 PEGASUS_OPCODE_PATH                     = .
 

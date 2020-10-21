@@ -31,16 +31,19 @@ def check_for_new_files_and_update(path):
             add_new_row(i)
 
 def menu_page():
+    show_all_info()
+    imageName = input("Type the name of the file you want to select: ")
+    inputStr = input("Is this image diagnosed (yes/no)? ")
+    if(input == "yes"):
+        update_file_status(imageName , inputStr)
+    else:
+        update_file_status(imageName , inputStr)
+
+def main_menu():
     while 1:
         choice = input("Selsct 'm' for main menu and 'q' to quit the application: ")
         if (choice == 'm') :
-            show_all_info()
-            imageName = input("Type the name of the file you want to select: ")
-            inputStr = input("Is this image diagnosed (yes/no)? ")
-            if(input == "yes"):
-                update_file_status(imageName , inputStr)
-            else:
-                update_file_status(imageName , inputStr)
+            menu_page()
         else:
             break
 
@@ -54,4 +57,4 @@ if __name__ == "__main__":
     print("Welcome to the diagnosis tracker!!")
     images_path = "images/"
     check_for_new_files_and_update(images_path)
-    menu_page()
+    main_menu()

@@ -133,6 +133,87 @@ SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationI
  *                  the C-STORE-RQ was successfully received by the SCP.
  *
  ****************************************************************************/
+void checkForSuccessResponse(unsigned int *A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    if (A_status != C_STORE_SUCCESS)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "C-STORE Success.", A_statusMeaningLength);
+
+}
+
+void checkForElementCoercionWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    if (*A_status != C_STORE_WARNING_ELEMENT_COERCION)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "Warning: Element Coersion... Continuing.", A_statusMeaningLength);
+}
+
+void checkForInvalidDatasetWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    if (*A_status != C_STORE_WARNING_INVALID_DATASET)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "Warning: Invalid Dataset... Continuing.", A_statusMeaningLength);
+}
+
+void checkForElementsDiscardedWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    if (*A_status != C_STORE_WARNING_ELEMENTS_DISCARDED)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "Warning: Elements Discarded... Continuing.", A_statusMeaningLength);
+}
+
+void checkForRefusedErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    SAMP_BOOLEAN returnBool = SAMP_TRUE;
+    if (*A_status != C_STORE_FAILURE_REFUSED_NO_RESOURCES)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "ERROR: REFUSED, NO RESOURCES.  ASSOCIATION ABORTING.", A_statusMeaningLength);
+    returnBool = SAMP_FALSE;
+}
+
+void checkForInvalidDatasetErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    SAMP_BOOLEAN returnBool = SAMP_TRUE;
+    if (*A_status != C_STORE_FAILURE_INVALID_DATASET)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "ERROR: INVALID_DATASET.  ASSOCIATION ABORTING.", A_statusMeaningLength);
+    returnBool = SAMP_FALSE;
+}
+
+void checkForUnUnderstandableErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    SAMP_BOOLEAN returnBool = SAMP_TRUE;
+    if (*A_status != C_STORE_FAILURE_CANNOT_UNDERSTAND)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "ERROR: CANNOT UNDERSTAND.  ASSOCIATION ABORTING.", A_statusMeaningLength);
+    returnBool = SAMP_FALSE;
+}
+
+void checkForprocessingFailureErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
+{
+    SAMP_BOOLEAN returnBool = SAMP_TRUE;
+    if (*A_status != C_STORE_FAILURE_PROCESSING_FAILURE)
+    {
+        return;
+    }
+    strncpy(A_statusMeaning, "ERROR: PROCESSING FAILURE.  ASSOCIATION ABORTING.", A_statusMeaningLength);
+    returnBool = SAMP_FALSE;
+}
+
 SAMP_BOOLEAN CheckResponseMessage(int A_responseMsgID, unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
     MC_STATUS mcStatus;
@@ -150,54 +231,14 @@ SAMP_BOOLEAN CheckResponseMessage(int A_responseMsgID, unsigned int* A_status, c
 
     /* MC_Get_Value_To_UInt worked.  Check the response status */
 
-    switch (*A_status)
-    {
-        /* Success! */
-    case C_STORE_SUCCESS:
-        strncpy(A_statusMeaning, "C-STORE Success.", A_statusMeaningLength);
-        break;
-
-        /* Warnings.  Continue execution. */
-
-    case C_STORE_WARNING_ELEMENT_COERCION:
-        strncpy(A_statusMeaning, "Warning: Element Coersion... Continuing.", A_statusMeaningLength);
-        break;
-
-    case C_STORE_WARNING_INVALID_DATASET:
-        strncpy(A_statusMeaning, "Warning: Invalid Dataset... Continuing.", A_statusMeaningLength);
-        break;
-
-    case C_STORE_WARNING_ELEMENTS_DISCARDED:
-        strncpy(A_statusMeaning, "Warning: Elements Discarded... Continuing.", A_statusMeaningLength);
-        break;
-
-        /* Errors.  Abort execution. */
-
-    case C_STORE_FAILURE_REFUSED_NO_RESOURCES:
-        strncpy(A_statusMeaning, "ERROR: REFUSED, NO RESOURCES.  ASSOCIATION ABORTING.", A_statusMeaningLength);
-        returnBool = SAMP_FALSE;
-        break;
-
-    case C_STORE_FAILURE_INVALID_DATASET:
-        strncpy(A_statusMeaning, "ERROR: INVALID_DATASET.  ASSOCIATION ABORTING.", A_statusMeaningLength);
-        returnBool = SAMP_FALSE;
-        break;
-
-    case C_STORE_FAILURE_CANNOT_UNDERSTAND:
-        strncpy(A_statusMeaning, "ERROR: CANNOT UNDERSTAND.  ASSOCIATION ABORTING.", A_statusMeaningLength);
-        returnBool = SAMP_FALSE;
-        break;
-
-    case C_STORE_FAILURE_PROCESSING_FAILURE:
-        strncpy(A_statusMeaning, "ERROR: PROCESSING FAILURE.  ASSOCIATION ABORTING.", A_statusMeaningLength);
-        returnBool = SAMP_FALSE;
-        break;
-
-    default:
-        sprintf(A_statusMeaning, "Warning: Unknown status (0x%04x)... Continuing.", *A_status);
-        returnBool = SAMP_FALSE;
-        break;
-    }
+    checkForSuccessResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForUnUnderstandableErrorResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForInvalidDatasetWarningResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForElementsDiscardedWarningResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForRefusedErrorResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForInvalidDatasetErrorResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForUnUnderstandableErrorResponse(A_status, A_statusMeaning, A_statusMeaningLength);
+    checkForprocessingFailureErrorResponse(A_status, A_statusMeaning, A_statusMeaningLength);
     fflush(stdout);
 
     return returnBool;

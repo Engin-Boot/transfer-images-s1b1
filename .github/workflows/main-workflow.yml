@@ -1,5 +1,5 @@
 name: Build
-
+ 
 on:
   push:
     branches: [ master ]
@@ -19,10 +19,21 @@ jobs:
     
     - name: static analysis of SCU
       run: ./Cppcheck_Config/cppcheck.exe SCUFiles/Command_Line.cpp SCUFiles/List_Management.cpp SCUFiles/Read_Image.cpp SCUFiles/Send_Image.cpp SCUFiles/scu-main.cpp SCUFiles/scu-main-function.cpp --verbose --std=c++11 --language=c++ --enable=all -UEXEC_FUNC
-
+ 
     - name: Build SCU test project
       run: msbuild SCUFiles/SCUTestProj.vcxproj /p:configuration=release /p:platform=x64 /p:OutDir="build_output"
-
+ 
+    - name: Download MergeCom utility
+      run: curl http://estore.merge.com/mergecom3/products/v5.11/mc3_w64_5110_008-91208.zip --output mc3_w64.zip
+ 
+    - name: Unzip MergeCom
+      shell: powershell
+      run: Expand-Archive -Path .\mc3_w64.zip -DestinationPath mc3_w64
+ 
+    - name: Copy required DLLs
+      shell: cmd
+      run: xcopy .\mc3_w64\mc3lib\*.dll .\SCUFiles\build_output\ /D
+ 
     - name: Testing SCU
       working-directory: SCUFiles
       shell: cmd

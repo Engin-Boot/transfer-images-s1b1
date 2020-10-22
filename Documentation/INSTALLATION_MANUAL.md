@@ -24,7 +24,7 @@ The following steps can be followed to run this SCU:
 4. Copy picx20.dll, libxml2.dll and mc3adv64.dll from mc3lib directory to the x64/Release/ folder under SCUFiles
 5. Create environment variables as shown in the image
 
-![alt text](https://github.com/Engin-Boot/transfer-images-s1b1/tree/master/images/Environment_variables.png?raw=true)
+![alt text](https://github.com/Engin-Boot/transfer-images-s1b1/blob/master/images/Environment_variables.png)
 
 6. Execute the of the shelf scp
 7. Now open mergecom.pro and enter the license key in LICENSE.

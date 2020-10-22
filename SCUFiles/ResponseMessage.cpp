@@ -135,7 +135,7 @@ SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationI
  ****************************************************************************/
 void checkForSuccessResponse(unsigned int *A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
-    if (A_status != C_STORE_SUCCESS)
+    if (A_status != (unsigned int*)C_STORE_SUCCESS)
     {
         return;
     }
@@ -145,7 +145,7 @@ void checkForSuccessResponse(unsigned int *A_status, char* A_statusMeaning, size
 
 void checkForElementCoercionWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
-    if (*A_status != C_STORE_WARNING_ELEMENT_COERCION)
+    if (*A_status != (unsigned int*)C_STORE_WARNING_ELEMENT_COERCION)
     {
         return;
     }
@@ -154,7 +154,7 @@ void checkForElementCoercionWarningResponse(unsigned int* A_status, char* A_stat
 
 void checkForInvalidDatasetWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
-    if (*A_status != C_STORE_WARNING_INVALID_DATASET)
+    if (*A_status != (unsigned int*)C_STORE_WARNING_INVALID_DATASET)
     {
         return;
     }
@@ -163,7 +163,7 @@ void checkForInvalidDatasetWarningResponse(unsigned int* A_status, char* A_statu
 
 void checkForElementsDiscardedWarningResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
-    if (*A_status != C_STORE_WARNING_ELEMENTS_DISCARDED)
+    if (*A_status != (unsigned int*)C_STORE_WARNING_ELEMENTS_DISCARDED)
     {
         return;
     }
@@ -173,7 +173,7 @@ void checkForElementsDiscardedWarningResponse(unsigned int* A_status, char* A_st
 void checkForRefusedErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
     SAMP_BOOLEAN returnBool = SAMP_TRUE;
-    if (*A_status != C_STORE_FAILURE_REFUSED_NO_RESOURCES)
+    if (*A_status != (unsigned int*)C_STORE_FAILURE_REFUSED_NO_RESOURCES)
     {
         return;
     }
@@ -184,7 +184,7 @@ void checkForRefusedErrorResponse(unsigned int* A_status, char* A_statusMeaning,
 void checkForInvalidDatasetErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
     SAMP_BOOLEAN returnBool = SAMP_TRUE;
-    if (*A_status != C_STORE_FAILURE_INVALID_DATASET)
+    if (*A_status != (unsigned int*)C_STORE_FAILURE_INVALID_DATASET)
     {
         return;
     }
@@ -195,7 +195,7 @@ void checkForInvalidDatasetErrorResponse(unsigned int* A_status, char* A_statusM
 void checkForUnUnderstandableErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
     SAMP_BOOLEAN returnBool = SAMP_TRUE;
-    if (*A_status != C_STORE_FAILURE_CANNOT_UNDERSTAND)
+    if (*A_status != (unsigned int*)C_STORE_FAILURE_CANNOT_UNDERSTAND)
     {
         return;
     }
@@ -206,7 +206,7 @@ void checkForUnUnderstandableErrorResponse(unsigned int* A_status, char* A_statu
 void checkForprocessingFailureErrorResponse(unsigned int* A_status, char* A_statusMeaning, size_t A_statusMeaningLength)
 {
     SAMP_BOOLEAN returnBool = SAMP_TRUE;
-    if (*A_status != C_STORE_FAILURE_PROCESSING_FAILURE)
+    if (*A_status != (unsigned int*)C_STORE_FAILURE_PROCESSING_FAILURE)
     {
         return;
     }

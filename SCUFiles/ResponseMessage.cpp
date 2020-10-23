@@ -30,7 +30,7 @@ int checkForNormalCompletionResponse(MC_STATUS mcStatus)
         fflush(stdout);
         return (SAMP_FALSE);
     }
-    return;
+    return (SAMP_TRUE);
 }
 
 int checkMessageIdResponse(MC_STATUS mcStatus)
@@ -41,7 +41,7 @@ int checkMessageIdResponse(MC_STATUS mcStatus)
         fflush(stdout);
         return(SAMP_TRUE);
     }
-    return;
+    return(SAMP_FALSE);
 }
 
 int checkForSopInstanceResponse(MC_STATUS mcStatus)
@@ -52,10 +52,10 @@ int checkForSopInstanceResponse(MC_STATUS mcStatus)
         fflush(stdout);
         return(SAMP_TRUE);
     }
-    return;
+    return(SAMP_FALSE);
 }
 
-int checkForNodeList(STORAGE_OPTIONS* A_options, unsigned int dicomMsgID, InstanceNode* node, char* affectedSOPinstance, InstanceNode** A_list)
+void checkForNodeList(STORAGE_OPTIONS* A_options, unsigned int dicomMsgID, InstanceNode* node, char* affectedSOPinstance, InstanceNode** A_list)
 {
     if (!A_options->StreamMode)
     {
@@ -83,7 +83,7 @@ int checkForResponseMessageFailure(MC_STATUS mcStatus)
         fflush(stdout);
         return (SAMP_TRUE);
     }
-    return;
+    return (SAMP_FALSE);
 }
 
 SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationID, int A_timeout, InstanceNode** A_list, InstanceNode* A_node)

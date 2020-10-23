@@ -22,6 +22,70 @@
  *                  error occurs.
  *
  ****************************************************************************/
+int checkForNormalCompletionResponse(MC_STATUS mcStatus)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Read_Message failed", mcStatus);
+        fflush(stdout);
+        return (SAMP_FALSE);
+    }
+    return;
+}
+
+int checkMessageIdResponse(MC_STATUS mcStatus)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Get_Value_To_UInt for Message ID Being Responded To failed.  Unable to process response message.", mcStatus);
+        fflush(stdout);
+        return(SAMP_TRUE);
+    }
+    return;
+}
+
+int checkForSopInstanceResponse(MC_STATUS mcStatus)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Get_Value_To_String for affected SOP instance failed.  Unable to process response message.", mcStatus);
+        fflush(stdout);
+        return(SAMP_TRUE);
+    }
+    return;
+}
+
+int checkForNodeList(STORAGE_OPTIONS* A_options, unsigned int dicomMsgID, InstanceNode* node, char* affectedSOPinstance, InstanceNode** A_list)
+{
+    if (!A_options->StreamMode)
+    {
+        node = *A_list;
+        while (node)
+        {
+            if (node->dicomMsgID == dicomMsgID)
+            {
+                if (!strcmp(affectedSOPinstance, node->SOPInstanceUID))
+                {
+                    break;
+                }
+            }
+            node = node->Next;
+        }
+    }
+    return;
+}
+
+int checkForResponseMessageFailure(MC_STATUS mcStatus)
+{
+    if (mcStatus != MC_NORMAL_COMPLETION)
+    {
+        PrintError("MC_Free_Message failed for response message", mcStatus);
+        fflush(stdout);
+        return (SAMP_TRUE);
+    }
+    return;
+}
+
 SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationID, int A_timeout, InstanceNode** A_list, InstanceNode* A_node)
 {
     MC_STATUS       mcStatus;
@@ -40,48 +104,19 @@ SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationI
     if (mcStatus == MC_TIMEOUT)
         return (SAMP_TRUE);
 
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Read_Message failed", mcStatus);
-        fflush(stdout);
-        return (SAMP_FALSE);
-    }
+    checkForNormalCompletionResponse(mcStatus);
 
     mcStatus = MC_Get_Value_To_UInt(responseMessageID, MC_ATT_MESSAGE_ID_BEING_RESPONDED_TO, &dicomMsgID);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Get_Value_To_UInt for Message ID Being Responded To failed.  Unable to process response message.", mcStatus);
-        fflush(stdout);
-        return(SAMP_TRUE);
-    }
+    checkMessageIdResponse(mcStatus);
 
     mcStatus = MC_Get_Value_To_String(responseMessageID, MC_ATT_AFFECTED_SOP_INSTANCE_UID, sizeof(affectedSOPinstance), affectedSOPinstance);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Get_Value_To_String for affected SOP instance failed.  Unable to process response message.", mcStatus);
-        fflush(stdout);
-        return(SAMP_TRUE);
-    }
+    checkForSopInstanceResponse(mcStatus);
 
-    if (!A_options->StreamMode)
-    {
-        node = *A_list;
-        while (node)
-        {
-            if (node->dicomMsgID == dicomMsgID)
-            {
-                if (!strcmp(affectedSOPinstance, node->SOPInstanceUID))
-                {
-                    break;
-                }
-            }
-            node = node->Next;
-        }
-    }
+    checkForNodeList(A_options, dicomMsgID, node, affectedSOPinstance, A_list);
 
     if (!node)
     {
-        printf("Message ID Being Responded To tag does not match message sent over association: %u\n", dicomMsgID);
+        printf("Message ID Being Responded To tag does not match message sent over association: %d\n", dicomMsgID);
         MC_Free_Message(&responseMessageID);
         fflush(stdout);
         return (SAMP_TRUE);
@@ -101,16 +136,10 @@ SAMP_BOOLEAN ReadResponseMessages(STORAGE_OPTIONS* A_options, int A_associationI
     node->failedResponse = SAMP_FALSE;
 
     mcStatus = MC_Free_Message(&responseMessageID);
-    if (mcStatus != MC_NORMAL_COMPLETION)
-    {
-        PrintError("MC_Free_Message failed for response message", mcStatus);
-        fflush(stdout);
-        return (SAMP_TRUE);
-    }
+    checkForResponseMessageFailure(mcStatus);
     fflush(stdout);
     return (SAMP_TRUE);
 }
-
 
 /****************************************************************************
  *

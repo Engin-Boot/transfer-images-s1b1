@@ -18,7 +18,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.0
     
     - name: static analysis of SCU
-      run: ./Cppcheck_Config/cppcheck.exe SCUFiles/Command_Line.cpp SCUFiles/List_Management.cpp SCUFiles/Read_Image.cpp SCUFiles/Send_Image.cpp SCUFiles/scu-main.cpp SCUFiles/scu-main-function.cpp --verbose --std=c++11 --language=c++ --enable=all -UEXEC_FUNC
+      run: ./Cppcheck_Config/cppcheck.exe SCUFiles/CommandLine.cpp SCUFiles/ListManagement.cpp SCUFiles/ReadImage.cpp SCUFiles/SendImage.cpp SCUFiles/SCUMain.cpp SCUFiles/SCUMainFunction.cpp --verbose --std=c++11 --language=c++ --enable=all -UEXEC_FUNC
  
     - name: Build SCU test project
       run: msbuild SCUFiles/SCUTestProj.vcxproj /p:configuration=release /p:platform=x64 /p:OutDir="build_output"

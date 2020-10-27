@@ -149,20 +149,20 @@
     <ClInclude Include="Definitions.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Command_Line.cpp">
+    <ClCompile Include="CommandLine.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="general_util.cpp" />
-    <ClCompile Include="List_Management.cpp" />
-    <ClCompile Include="Read_Image.cpp" />
+    <ClCompile Include="GeneralUtil.cpp" />
+    <ClCompile Include="ListManagement.cpp" />
+    <ClCompile Include="ReadImage.cpp" />
     <ClCompile Include="ResponseMessage.cpp" />
-    <ClCompile Include="scu-main-function.cpp">
+    <ClCompile Include="SCUMainFunction.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="scu-main.cpp">
+    <ClCompile Include="SCUMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Send_Image.cpp" />
+    <ClCompile Include="SendImage.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

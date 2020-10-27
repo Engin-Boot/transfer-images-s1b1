@@ -147,19 +147,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Command_Line.cpp" />
-    <ClCompile Include="general_util.cpp" />
-    <ClCompile Include="List_Management.cpp" />
-    <ClCompile Include="Read_Image.cpp" />
+    <ClCompile Include="CommandLine.cpp" />
+    <ClCompile Include="GeneralUtil.cpp" />
+    <ClCompile Include="ListManagement.cpp" />
+    <ClCompile Include="ReadImage.cpp" />
     <ClCompile Include="ResponseMessage.cpp" />
-    <ClCompile Include="scu-main-function.cpp" />
-    <ClCompile Include="Send_Image.cpp" />
+    <ClCompile Include="SCUMainFunction.cpp" />
+    <ClCompile Include="SendImage.cpp" />
     <ClCompile Include="TestSCU.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="catch.hpp" />
     <ClInclude Include="Definitions.h" />
-    <ClInclude Include="general_util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

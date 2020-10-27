@@ -177,7 +177,7 @@ TEST_CASE("when a valid extra option is passed as an argument then the task corr
         STORAGE_OPTIONS* store = new STORAGE_OPTIONS;
         strcpy(store->RemoteAE, "MERGE_STORE_SCP");
         const char* argv[] = { "SCU", "Transfer_Image_SCP" };
-        REQUIRE(ExtraOptions(1, argv, store) == true);
+        REQUIRE(ExtraOptions(1, argv, store) == false);
     }
     SECTION("when 2 extra arguments are passed then remote AE and start image parameters are set and ExtraOptions() returns true")
     {
@@ -185,7 +185,7 @@ TEST_CASE("when a valid extra option is passed as an argument then the task corr
         strcpy(store->RemoteAE, "MERGE_STORE_SCP");
         store->StartImage = store->StopImage = 0;
         const char* argv[] = { "SCU", "Transfer_Image_SCP" , "2" };
-        REQUIRE(ExtraOptions(1, argv, store) == true);
+        REQUIRE(ExtraOptions(1, argv, store) == false);
     }
     SECTION("when 3 extra arguments are passed then remote AE, start image and stop image parameters are set and ExtraOptions() returns true")
     {
@@ -193,7 +193,7 @@ TEST_CASE("when a valid extra option is passed as an argument then the task corr
         strcpy(store->RemoteAE, "MERGE_STORE_SCP");
         store->StartImage = store->StopImage = 0;
         const char* argv[] = { "SCU", "Transfer_Image_SCP" , "2", "5" };
-        REQUIRE(ExtraOptions(1, argv, store) == true);
+        REQUIRE(ExtraOptions(1, argv, store) == false);
     }
 }
 TEST_CASE("when valid options are entered then CheckOptions() returns true else false")

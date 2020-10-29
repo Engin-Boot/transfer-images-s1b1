@@ -50,6 +50,8 @@ dlldata.c
 # DNX
 project.lock.json
 artifacts/
+mc3_w64/
+build_output/
 
 *_i.c
 *_p.c
@@ -77,6 +79,7 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
+*.zip
 
 # Chutzpah Test files
 _Chutzpah*

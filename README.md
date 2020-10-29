@@ -1,33 +1,35 @@
 # Transfer Medical Images
 
-DICOM is a standard used to transfer medical images from one host to another.
-This project emulates a workflow-
+## About
+DICOM is a standard used to transfer medical images from one host to another. This project also contains other utility modules like ImgMailUtil & DiagnosisTracker which come in handy for an end to end user experience.
 
-- A device constructs an image and sends it to a central server.
-- A Radiologist picks up the image for diagnosis.
+This application is a Service Class User(SCU) built over DICOM Storage Service Class supported by MergeCom toolkit. SCU sends message to a DICOM SCP (Service Class Provider). Any third party SCP can be used along with this SCU. SCU acts as a client and SCP as a server which receives message from client.
 
-## Deliverables
+Storage Service Class defines context of transfer of images from one DICOM application entity to another. This Storage Service does not specify that the receiver of the images take ownership for the safekeeping of the images. In this SCU storage commitment from SCP can not be negotiated.
 
-- A DICOM SCU 'sender' to send an image.
-Use an off-the-shelf SCP 'receiver' to receive and store the image.
-- A Python utility to send an email to the radiologist,
-identifying the image to be diagnosed.
+To Transfer images SCU does the following actions:
 
-You can use [MergeCOM](http://estore.merge.com/mergecom3/download-thanks.aspx?productId=b1534ecc-1e57-480c-b5ca-5681b30e996f)
+1. Open Association with third party SCP
+2. Read DICOM data to be transferred
+3. Format data to message format
+4. Send image to SCP
+5. Close association
 
-Hints:
+## Setup
 
-- The zip file downloaded from the above link has the required libraries and information
-- The user manual in mc3doc gives a good introduction to DICOM 
-- mc3apps has the image storage in stor_scp and stor_scu. Build using Visual Studio.
-- mc3bin has useful utilities.
-Use mc3file to generate an image-file 0.img for testing the transfer
-- Edit the mergecom.pro to include the license, adjust the paths as per your installation
+Windows users can execute the setup.ps1 to get their exe ready to be used.
 
-## Extended Functionality
+## Project Structure
 
-Track the image through the workflow.
-Keep track of the images that are stored, along with a status:
-Pending for Diagnosis / Diagnosis Complete.
+- All the documentation related to the modules and functions can be found in Documentation\ folder.
+- Merge\ contains the required mergecom licensing and service files
+- mc3msg\ contains the required mergecom message related components
+- SCUFiles\ contains the actual project along with its cpp files
+- SampleImg\ contains the sample DICOM images for instant testing and usage.
 
-You can use any mechanism to store the status. E.g., CSV, Excel, SQLite
+## Usage
+In command prompt reach path to SCU.exe, now enter command SCU a list of command syntax of features supported will be displayed. Enter the command you want. The media file(.img) to be sent should be in the same directory.
+Example:
+```
+SCU MERGE_STORE_SCP 0 2: This command will send file 0.img to 2.img to this SCP
+```

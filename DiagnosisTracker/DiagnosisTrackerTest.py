@@ -20,7 +20,10 @@ def test_check_for_new_files_and_update():
 
     os.chdir(cwd)
     dt.diagnosis_tracker_fileName = "DummyDiagnosisTracker.csv"
-    os.remove(dt.diagnosis_tracker_fileName)
+    
+    if(os.path.isfile(dt.diagnosis_tracker_fileName)):
+        os.remove(dt.diagnosis_tracker_fileName)
+    
     df = pd.DataFrame(columns = ["FileName", "Status"])
     df.to_csv(dt.diagnosis_tracker_fileName, index=False)
 

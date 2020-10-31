@@ -38,3 +38,13 @@ jobs:
       working-directory: SCUFiles
       shell: cmd
       run: build_output\SCUTestProj.exe
+
+    - name: Adding required python modules to test DiagnosisTracker
+      working-directory: DiagnosisTracker
+      shell: cmd
+      run: python -m pip install pytest, opencv-python, pandas
+    
+    - name: Testing Diagnosis Tracker
+      working-directory: DiagnosisTracker
+      shell: cmd
+      run: pytest DiagnosisTrackerTest.py

@@ -52,6 +52,7 @@ project.lock.json
 artifacts/
 mc3_w64/
 build_output/
+__pycache__/
 
 *_i.c
 *_p.c

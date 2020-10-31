@@ -13,6 +13,7 @@ def add_new_row(fileName):
 def show_all_info():
     diagnosis_data = pd.read_csv(diagnosis_tracker_fileName)
     print(diagnosis_data)
+    return diagnosis_data
 
 def update_file_status(fileName, status):
     update_string = "Diagnosed"
